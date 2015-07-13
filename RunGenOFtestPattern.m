@@ -4,7 +4,7 @@
 % writes 16-bit or 8-bit unsigned integer files of phantoms. Suggest using
 % .pgm output if using with Black Robust Flow estimator
 %
-% 
+%
 function varargout = RunGenOFtestPattern(playVideo,movieType,OFtestMethod,textureSel,nFrame,...
                         nRow,nCol,dx,dy,fStep,BitDepth,pWidth,nPhantom,phantomSpacing,swirlParam)
 % [data] = RunGenOFtestPattern(playVideo,movieType,OFtestMethod,textureSel,nFrame,nRow,nCol,dx,dy,fStep,BitDepth,pWidth,swirlParam)
@@ -41,7 +41,7 @@ function varargout = RunGenOFtestPattern(playVideo,movieType,OFtestMethod,textur
 %               'still'
 %               'diagslide'
 %               'shearright'
-% 
+%
 % textureSel:   'vertBar'
 %               'uniformRandom'
 %               'wall'
@@ -107,7 +107,7 @@ end
 
 fillValue = 0;
 
-if ismatlab
+if ~isoctave
     if verLessThan('matlab','8.1'), %R2013a
         warning('Some image toolbox functions REQUIRE R2013a or newer')
         oldWay = true; %uses slower transformation algorithms
@@ -117,7 +117,8 @@ if ismatlab
 else % octave
    page_output_immediately(1)
    page_screen_output(0)
-   oldWay = true; % octave 3.8.1 didn't have imwarp 
+   pkg load image
+   oldWay = true; % octave 3.8.1 didn't have imwarp
   % display(nRow); display(nCol)
 end
 
@@ -137,11 +138,11 @@ if length(phantomSpacing)==1
     %TODO add time-dependant spacing
     end
 end
-%% initialize  
+%% initialize
 [bgMaxVal,bgMinVal,data,myClass] = OFgenParamInit(BitDepth,nRow,nCol,nFrame);
- 
+
 if playVideo
-%h.f = figure('pos',[250 250 560 600]); 
+%h.f = figure('pos',[250 250 560 600]);
 h.f = figure(1); clf
 h.ax = axes('parent',h.f);
 %h.img = imshow(nan(nRow,nCol),'parent',h.ax,'DisplayRange',[bgMinVal bgMaxVal]);
@@ -156,63 +157,13 @@ end
 
 
 %% create surface texture
-   myInt = str2func(myClass);
-switch lower(textureSel)
-    case 'wall',           bg = bgMaxVal .* ones(nRow,nCol,myClass);
-    case 'uniformrandom',  bg = bgMinVal + (bgMaxVal-bgMinVal).*rand(nRow,nCol);
-    case {'gaussian'}
-        bg = fspecial('gaussian',[nRow,nCol],GaussSigma); %create wide 2D gaussian shape
-        bg = double(bgMaxVal).*bg./max(max(bg)); %normalize to full bit range
-        bg = myInt(bg); %cast to desired class
-    case {'vertsine'}
-        centerCol = pWidth; %<update>
-        bg = zeros(1,nCol,'double'); %yes, double to avoid quantization
-        bg(pWidth-pWidth/2:pWidth+pWidth/2-1) = sind(linspace(0,180,pWidth)); %don't do int8 yet or you'll quantize it to zero!
-        bg = double(bgMaxVal) .* repmat(bg,nRow,1); 
-        bg = myInt(bg);    % cast to desired class
-    case 'laplacian'
-        bg = abs(fspecial('log',[nRow,nCol],50));
-        bg = bgMaxVal.*bg./max(max(bg)); %normalize to full bit range
-    case 'checkerboard'
-    bg = myInt(checkerboard(nRow/8).*bgMaxVal);
-    case 'xtriangle'
-    bg(1,1:nCol/2) = myInt(bgMinVal:round((bgMaxVal-bgMinVal)/(nRow/2)):bgMaxVal);
-    bg(1,nCol/2+1:nCol) = fliplr(bg);   bg = repmat(bg,[nRow,1]);
-    case 'ytriangle'
-    bg(1:nRow/2,1) = myInt(bgMinVal:round((bgMaxVal-bgMinVal)/(nRow/2)):bgMaxVal);
-    bg(nRow/2+1:nRow,1) = flipud(bg);   bg = repmat(bg,[1,nCol]);
-    case {'pyramid','pyramid45'}
-        bg = zeros(nRow,nCol,myClass);
-        temp = myInt(bgMinVal:round((bgMaxVal-bgMinVal)/(nRow/2)):bgMaxVal);
-        for i = 1:nRow/2
-           bg(i,i:end-i+1) = temp(i); %north face
-           bg(i:end-i+1,i) = temp(i); %west face
-           bg(end-i+1,i:end-i+1) = temp(i); %south face
-           bg(i:end-i+1,end-i+1) = temp(i); %east face
-        end
-        if strcmpi(textureSel,'pyramid45'), bg = imrotate(bg,45,'bilinear','crop'); end
-    case 'spokes' %3 pixels wide
-        bg = zeros(nRow,nCol,myClass);
-        bg(nRow/2-floor(pWidth/2) : nRow/2+ floor(pWidth/2) ,1:nCol) = bgMaxVal; %horizontal line
-        bg(1:nRow,...
-            nCol/2-floor(pWidth/2): nCol/2+ floor(pWidth/2)  ) = bgMaxVal; %vertical line
-        bg = bg + imrotate(bg,45,'bilinear','crop'); %diagonal line
-    case 'vertbar' %vertical bar, starts center of image
-        centerCol = nRow/2;
-        bg = zeros(nRow,nCol,myClass);
-        
-        %bg(1:nRow,end-4:end) = bgMaxVal; %vertical line, top to bottom
-        
-        % vertical bar starts 1/4 from bottom and 1/4 from top of image
-        bg(nRow*1/4:nRow*3/4, nCol/2 - floor(pWidth/2) : nCol/2 + floor(pWidth/2)) = bgMaxVal; 
-    otherwise, error('unspecified texture selected')
-end
+bg = phantomTexture(textureSel,myClass,nRow,nCol,bgMaxVal,pWidth);
 
 %% write AVI video
  fPrefix = [OFtestMethod,'-',textureSel,'-'];
  try
 if any(strcmpi({'lossless','mjpeg','avi'},movieType))
-   
+
 switch lower(movieType)
     case 'lossless'
 writeObj = VideoWriter([fPrefix,'.mj2'],...
@@ -241,85 +192,85 @@ switch lower(OFtestMethod)
         swirlParam.x0(1:length(swirlParam.x0)) = centerCol %FIXME
         display('The Swirl algorithm is alpha-testing--needs manual positioning help')
         for i = I
-           
+
            data(:,:,i) = makeSwirl(bg,...
                                  swx0,swy0,...
                                  swstr * (i-1), swrad,...
                                  false,fillValue,BitDepth);
            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
         end
-    case 'shearrightswirl' 
+    case 'shearrightswirl'
         swx0(1:length(swy0)) = centerCol %FIXME
         %method: swirl, then shear
         tic
-        
+
         %parfor i = 1:fStep:nFrame
         for i = I
-            
+
             %Step 1: swirl
             dataFrame = makeSwirl(bg,...
                                  swx0,swy0,...
                                  swstr * i, swrad,...
                                  false,0,BitDepth);
             %step 2: shear
-            data(:,:,i) = doShearRight(dataFrame,i,nFrame,dx,nRow,nCol,oldWay); 
-            
+            data(:,:,i) = doShearRight(dataFrame,i,nFrame,dx,nRow,nCol,oldWay);
+
             doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
         end
         compTime = toc;
-        
+
     case 'still'
         for i = I
-            data(:,:,i) = bg; 
+            data(:,:,i) = bg;
             doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end 
+        end
     case 'rotate360ccw'
         for i = I
             q = (nFrame-i)/nFrame*360; %degrees
             data(:,:,i) = imrotate(bg,q,'bilinear','crop');
             doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end 
+        end
     case 'rotate180ccw'
         for i = I
             q = (nFrame-i)/nFrame*180; %degrees
             data(:,:,i) = imrotate(bg,q,'bilinear','crop');
             doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end 
+        end
     case 'rotate90ccw'
         for i = I
             q = (nFrame-i)/nFrame*90; %degrees
             data(:,:,i) = imrotate(bg,q,'bilinear','crop');
             doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end   
+        end
     case 'shearright'
         for i = I
             data(:,:,i) = doShearRight(bg,i,nFrame,dx,nRow,nCol,oldWay,fillValue);
-           
+
             doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
         end
-        
+
     case 'diagslide'
         for i = I
             T =   [1,0,0
                    0,1,0
                 -nFrame+i*dx,  -nFrame+i*dy,  1];
-                 
+
             data(:,:,i) = doTform(T,bg,oldWay,nRow,nCol,fillValue);
-           
+
             doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
         end
-        
-    case 'horizslide' 
+
+    case 'horizslide'
         display('Horizontally moving wall')
         display(size(data))
         close(h.f) % won't use it
-        parfor i=I 
+        parfor i=I
           tmpData = zeros(nRow,nCol,myClass);
           for iPhantom = Iphantom
             T =   [1,0,0
                    0,1,0
                   -nFrame+i*dx+phantomSpacing(iPhantom), 0, 1];
-                      
+
             tmpData = tmpData + doTform(T,bg,oldWay,nRow,nCol,fillValue);
           end %for iPhantom
           data(:,:,i) = tmpData;
@@ -328,19 +279,19 @@ switch lower(OFtestMethod)
         try close(h.f), end
 
         doWriteVid(writeObj,data,writeVid,playVideo,movieType,fPrefix)
-        
+
     case 'vertslide'
         for i = I
             T =   [1,0,0
                    0,1,0
                    0,-nFrame+i*dy, 1];
-               
+
             data(:,:,i) = doTform(T,bg,oldWay,nRow,nCol,fillValue);
 
             doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
         end
-   
-    otherwise, close(writeObj),error('Unknown method specified') 
+
+    otherwise, close(writeObj),error('Unknown method specified')
 end
 
 close(writeObj)
@@ -357,7 +308,7 @@ if BitDepth == 8 || BitDepth == 16
     myClass = ['uint',int2str(BitDepth)];
     myInt = str2func(myClass);
     bgMaxVal = myInt(2^BitDepth - 1);
-elseif BitDepth == 32 
+elseif BitDepth == 32
     myClass = 'single';
     bgMaxVal = 1; %normalize
     myInt = str2func(myClass);
@@ -365,7 +316,7 @@ elseif BitDepth == 64
     myClass = 'double';
     bgMaxVal = 1; %normalize
     myInt = str2func(myClass);
-else 
+else
     error(['unknown bit depth ',int2str(BitDepth)])
 end
 
@@ -380,14 +331,14 @@ data = zeros(nRow,nCol,nFrame,myClass); %initialize all frame
 end
 
 function data = doTform(T,bg,oldWay,nRow,nCol,fillValue)
-            if ~oldWay  %new way    
-                tform = affine2d(T); 
+            if ~oldWay  %new way
+                tform = affine2d(T);
                 RA = imref2d([nCol,nRow],[1 nCol],[1 nRow]);
                 data = imwarp(bg,tform,'outputView',RA);
-            else % old way     
-                
+            else % old way
+
                 tform = maketform('affine',T);   %#ok<MTFA1>
-                
+
                 data = imtransform(bg,tform,'bilinear',...
                      'Udata',[1 nCol],...
                      'Vdata',[1 nRow],...
@@ -395,17 +346,17 @@ function data = doTform(T,bg,oldWay,nRow,nCol,fillValue)
                      'Ydata',[1 nRow],...
                      'fillvalues',fillValue,...
                      'size',[nRow,nCol]); %#ok<DIMTRNS>
-                 
+
             end
 %display(['bg ',int2str(size(bg))])
 %display(nCol); display(nRow)
 %display(['data size ',int2str(size(data))])
-            
+
 end %function
 
 function doVid(writeObj,dataFrame,writeVid,playVideo,movieType,hImg,i,fPrefix)
 % this only works for NON-parfor methods!
-% 
+%
 if writeVid
     switch lower(movieType)
         case {'lossless','mjpeg','avi'}, writeVideo(writeObj,dataFrame)
@@ -425,16 +376,16 @@ function doWriteVid(writeObj,data,writeVid,playVideo,movieType,fPrefix)
 if writeVid
     [nRow,nCol,nFrame] = size(data);
     switch lower(movieType)
-       
-        case {'lossless','mjpeg','avi'}, 
+
+        case {'lossless','mjpeg','avi'},
             writeVideo(writeObj,reshape(data,nRow,nCol,1,nFrame))
-        
+
         otherwise
             tmpVidFN = [fPrefix,'.avi'];
             display(['trying to make video ',tmpVidFN,' then convert to ',movieType])
             try
                writeObj = VideoWriter(tmpVidFN, 'Motion JPEG AVI');
-               writeObj.Quality = 100; 
+               writeObj.Quality = 100;
                open(writeObj)
                writeVideo(writeObj,reshape(data,nRow,nCol,1,nFrame))
                display(['attempting to convert ',tmpVidFN,' to ',movieType,' via ImageMagick via command'])
@@ -445,12 +396,12 @@ if writeVid
                 display(['Im sorry, I was unable to complete conversion of ',tmpVidFN,' to ',movieType])
                 lasterr
             end %try
-            
+
     end %switch
 
 end
-if playVideo
-   implay(data) 
+if playVideo && ~isoctave
+   implay(data)
 end
 end
 
@@ -459,6 +410,6 @@ function dataFrame = doShearRight(bg,i,nFrame,dx,nRow,nCol,oldWay,fillValue)
            T = [1,0,0;...
                (nFrame-i*dx)/nFrame,1,0;...
                  0,0,1];
-           
+
  dataFrame = doTform(T,bg,oldWay,nRow,nCol,fillValue);
 end
