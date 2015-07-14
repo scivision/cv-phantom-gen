@@ -118,7 +118,7 @@ else % octave
    page_output_immediately(1)
    page_screen_output(0)
    pkg load image
-   oldWay = true; % octave 3.8.1 didn't have imwarp
+   oldWay = true; % octave 4.0.0 didn't have imwarp
   % display(nRow); display(nCol)
 end
 
