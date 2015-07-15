@@ -139,13 +139,13 @@ if length(phantomSpacing)==1
     end
 end
 %% initialize
-[bgMaxVal,bgMinVal,data,myClass] = OFgenParamInit(BitDepth,nRow,nCol,nFrame);
+[bgminmax,data,myClass] = OFgenParamInit(BitDepth,nRow,nCol,nFrame);
 
 if playVideo
 %h.f = figure('pos',[250 250 560 600]);
 h.f = figure(1); clf
 h.ax = axes('parent',h.f);
-%h.img = imshow(nan(nRow,nCol),'parent',h.ax,'DisplayRange',[bgMinVal bgMaxVal]);
+%h.img = imshow(nan(nRow,nCol),'parent',h.ax,'DisplayRange',bgminmax);
 h.img = imagesc(nan(nRow,nCol));
 colormap('gray')
 axis('image')
@@ -157,7 +157,7 @@ end
 
 
 %% create surface texture
-bg = phantomTexture(textureSel,myClass,nRow,nCol,bgMaxVal,pWidth);
+bg = phantomTexture(textureSel,myClass,nRow,nCol,bgminmax,pWidth,GaussSigma);
 
 %% write AVI video
  fPrefix = [OFtestMethod,'-',textureSel,'-'];
@@ -302,19 +302,19 @@ if nargout>0, varargout{1} = data; end %don't send out huge data if not requeste
 
 end
 
-function [bgMaxVal,bgMinVal,data,myClass] = OFgenParamInit(BitDepth,nRow,nCol,nFrame)
+function [bgminmax,data,myClass] = OFgenParamInit(BitDepth,nRow,nCol,nFrame)
 
 if BitDepth == 8 || BitDepth == 16
     myClass = ['uint',int2str(BitDepth)];
     myInt = str2func(myClass);
-    bgMaxVal = myInt(2^BitDepth - 1);
+    bgMax = myInt(2^BitDepth - 1);
 elseif BitDepth == 32
     myClass = 'single';
-    bgMaxVal = 1; %normalize
+    bgMax = 1; %normalize
     myInt = str2func(myClass);
 elseif BitDepth == 64
     myClass = 'double';
-    bgMaxVal = 1; %normalize
+    bgMax = 1; %normalize
     myInt = str2func(myClass);
 else
     error(['unknown bit depth ',int2str(BitDepth)])
@@ -322,11 +322,13 @@ end
 
 
 
-bgMinVal = myInt(0);
+bgMin = myInt(0);
 
 
 data = zeros(nRow,nCol,nFrame,myClass); %initialize all frame
-  display(['max,min pixel intensities for ',myClass,' are taken to be: ',num2str(bgMinVal),',',num2str(bgMaxVal)])
+  display(['max,min pixel intensities for ',myClass,' are taken to be: ',num2str(bgMin),',',num2str(bgMax)])
+
+bgminmax = [bgMin,bgMax];
 
 end
 
