@@ -17,6 +17,10 @@ function [Iswirl,u,v] = makeSwirl(I,x0,y0,strength,radius,showPlot,fillValue,Bit
 %
 % Note: Octave 3.8 does not yet have makeresampler or tformarray.  
 
+if isoctave
+    warning('Octave 4.0 still does not have makeresampler')
+end
+
 if nargin<8 || isempty(BitDepth), BitDepth = 8; end
 myClass = ['uint',int2str(BitDepth)];
 whiteVal = 2^BitDepth-1;

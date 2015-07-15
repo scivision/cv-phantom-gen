@@ -80,7 +80,7 @@ if nargin<1 || isempty(playVideo), playVideo = true; end
 
 if nargin<2, movieType = []; end
 
-if nargin<3 || isempty(mtranslate), mtranslate = 'horizslide'; end
+if nargin<3 || isempty(mtranslate), mtranslate = 'swirlstill'; end
 
 if nargin<4 || isempty(textureSel), textureSel = 'vertbar'; end
 
@@ -101,7 +101,9 @@ if nargin<13 || isempty(nPhantom), nPhantom=1; end
 if nargin<14 || isempty(phantomSpacing) || all(phantomSpacing==0), phantomSpacing = 0; end
 
 if nargin<15 || isempty(swirlParam)
-    swirlParam.strength = []; swirlParam.radius =[]; swirlParam.x0 = []; swirlParam.y0=[];
+    %swirlParam.strength = []; swirlParam.radius =[]; swirlParam.x0 = []; swirlParam.y0=[];
+    swirlParam.x0=[256,256,256]; swirlParam.y0=[384,256,128]; 
+    swirlParam.radius=40; swirlParam.strength=0.035;
 end
 
 if ~isoctave
@@ -128,7 +130,8 @@ GaussSigma = 35;
 [bg,bgminmax,data,myClass] = phantomTexture(textureSel,nRow,nCol,nFrame,pWidth,GaussSigma,BitDepth);
 
 %% do translation
-data = translateTexture(bg,data,fStep,dxy,myClass,oldWay,swirlParam,nPhantom,phantomSpacing,textureSel,writeVid,playVideo,movieType,mtranslate);
+data = translateTexture(bg,data,fStep,dxy,myClass,oldWay,swirlParam,nPhantom,phantomSpacing,textureSel,
+  writeVid,playVideo,movieType,mtranslate,pWidth,BitDepth);
 
 if nargout>0, varargout{1} = data; end %don't send out huge data if not requested
 

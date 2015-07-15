@@ -1,4 +1,4 @@
-function data = translateTexture(bg,data,fStep,dxy,myClass,oldWay,swirlParam,nPhantom, phantomSpacing,textureSel,writeVid,playVideo,movieType,mtranslate)
+function data = translateTexture(bg,data,fStep,dxy,myClass,oldWay,swirlParam,nPhantom, phantomSpacing,textureSel,writeVid,playVideo,movieType,mtranslate,pWidth,BitDepth)
 
 %% need this for when this function is called by itself using Oct2Py/Octave
 try
@@ -49,7 +49,7 @@ end
 %if isempty(mtranslate), data=[]; return, end
 switch lower(mtranslate)
     case 'swirlstill' %currently, swirl starts off weak, and increases in strength
-        swirlParam.x0(1:length(swirlParam.x0)) = centerCol %FIXME
+        swirlParam.x0(1:length(swirlParam.x0)) = pWidth %FIXME
         display('The Swirl algorithm is alpha-testing--needs manual positioning help')
         for i = I
 
