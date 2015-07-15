@@ -10,28 +10,27 @@ from oct2py import Oct2Py
 import numpy as np
 from platform import system
 
-def genphantom(xy,writeformat,texture,motion,dtype,fwidth):
+def genphantom(xy,writeformat,texture,motion,dtype,fwidth,gausssigma):
     if system() == 'Windows':
         octexe='C:/Octave/Octave-4.0.0/bin/octave.exe' #lame
     else:
         octexe=None
     oc = Oct2Py(executable=octexe,oned_as='column',convert_to_float=True,timeout=5)
-    bg = oc.phantomTexture(texture,dtype,xy[1],xy[0],bgmaxval(dtype),fwidth)
+    bg = oc.phantomTexture(texture,dtype,xy[1],xy[0],bgminmax(dtype),fwidth,gausssigma)
 
 
     return bg
 
-
-
-def bgmaxval(dtype):
+def bgminmax(dtype):
     if dtype == 'float' or dtype is float:
         return 1.0
     elif dtype is int: #assuming uint16 is implied
-        return np.uint16(65535)
+        return 0,np.uint16(65535)
     else:
-        return np.iinfo(dtype).max
+        return 0,np.iinfo(dtype).max
 
 if __name__ == '__main__':
+    from matplotlib.pyplot import figure,show
     from argparse import ArgumentParser
     p = ArgumentParser(description="Auroral Phantom Generator")
     p.add_argument('--xy',help='number of X Y pixels',nargs=2,type=int,default=(512,512))
@@ -40,6 +39,14 @@ if __name__ == '__main__':
     p.add_argument('-m','--motion',help='how the phantom moves (vertslide,horizslide,swirl,...)',default='horizslide')
     p.add_argument('-d','--dtype',help='data format (float, uint16,...) of data',default='uint16')
     p.add_argument('-w','--width',help='feature width',type=float,default=30)
+    p.add_argument('--gausssigma',help='Gaussian std dev (only for gaussian phantoms)',type=float,default=35)
     p = p.parse_args()
 
-    data = genphantom(p.xy, p.format, p.texture,p.motion,p.dtype,p.width)
+    data = genphantom(p.xy, p.format, p.texture,p.motion,p.dtype,p.width,p.gausssigma)
+#%%
+    fg = figure()
+    ax=fg.gca()
+    hi = ax.imshow(data)
+    fg.colorbar(hi)
+    ax.set_title(p.texture + ' ' + p.motion)
+    show()
