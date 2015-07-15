@@ -1,4 +1,4 @@
-function data = translateTexture(bg,data,h,I,Iphantom,dx,nRow,nCol,myClass,oldWay,swirlParam,phantomSpacing,writeObj,writeVid,playVideo,movieType,fPrefix,nFrame,translate)
+function data = translateTexture(bg,data,h,I,Iphantom,dx,nRow,nCol,myClass,oldWay,swirlParam,phantomSpacing,writeObj,writeVid,playVideo,movieType,fPrefix,nFrame,mtranslate)
 
 fillValue = 0;
 
@@ -6,7 +6,7 @@ fillValue = 0;
 swx0 = swirlParam.x0; swy0 = swirlParam.y0;
 swstr = swirlParam.strength; swrad = swirlParam.radius;
 %%
-switch lower(translate)
+switch lower(mtranslate)
     case 'swirlstill' %currently, swirl starts off weak, and increases in strength
         swirlParam.x0(1:length(swirlParam.x0)) = centerCol %FIXME
         display('The Swirl algorithm is alpha-testing--needs manual positioning help')
