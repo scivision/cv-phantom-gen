@@ -1,11 +1,14 @@
-function bg = phantomTexture(textureSel,dtype,nRow,nCol,bgminmax,pWidth,GaussSigma)
+function [bg,bgminmax,data,dtype] = phantomTexture(textureSel,nRow,nCol,nFrame,pWidth,GaussSigma,BitDepth)
+
+[bgminmax,data,dtype] = OFgenParamInit(BitDepth,nRow,nCol,nFrame);
 
 %% need this for when this function is called by itself using Oct2Py/Octave
 try
- fspecial('average',1,1)
+ fspecial('average',1,1);
 catch
  pkg load image
 end
+
 %% main program
    myInt = str2func(dtype);
 switch lower(textureSel)
@@ -63,4 +66,30 @@ switch lower(textureSel)
         bg(nRow*1/4:nRow*3/4, nCol/2 - floor(pWidth/2) : nCol/2 + floor(pWidth/2)) = bgminmax(2);
     otherwise, error(['unspecified texture ',textureSel,' selected'])
 end %switch
+end %function
+
+function [bgminmax,data,myClass] = OFgenParamInit(BitDepth,nRow,nCol,nFrame)
+
+if BitDepth == 8 || BitDepth == 16
+    myClass = ['uint',int2str(BitDepth)];
+    myInt = str2func(myClass);
+    bgMax = myInt(2^BitDepth - 1);
+elseif BitDepth == 32
+    myClass = 'single';
+    bgMax = 1; %normalize
+    myInt = str2func(myClass);
+elseif BitDepth == 64
+    myClass = 'double';
+    bgMax = 1; %normalize
+    myInt = str2func(myClass);
+else
+    error(['unknown bit depth ',int2str(BitDepth)])
+end
+
+bgMin = myInt(0);
+
+data = zeros(nRow,nCol,nFrame,myClass); %initialize all frame
+  display(['max,min pixel intensities for ',myClass,' are taken to be: ',num2str(bgMin),',',num2str(bgMax)])
+
+bgminmax = [bgMin,bgMax];
 end %function

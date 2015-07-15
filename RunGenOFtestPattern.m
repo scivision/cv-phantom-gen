@@ -6,8 +6,8 @@
 %
 %
 function varargout = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureSel,nFrame,...
-                        nRow,nCol,dx,dy,fStep,BitDepth,pWidth,nPhantom,phantomSpacing,swirlParam)
-% [data] = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureSel,nFrame,nRow,nCol,dx,dy,fStep,BitDepth,pWidth,swirlParam)
+                        nRow,nCol,dxy,fStep,BitDepth,pWidth,nPhantom,phantomSpacing,swirlParam)
+% [data] = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureSel,nFrame,nRow,nCol,dxy,fStep,BitDepth,pWidth,swirlParam)
 % EXAMPLE
 %
 % 3 parallel vertical bars
@@ -52,8 +52,7 @@ function varargout = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureS
 % nFrame:     default 256 frames of video
 % nRow:         default 256 y-pixels
 % nCol:         default 256 x-pixels
-% dx:   horizontal pixel step size b/w frames
-% dy:	vertical pixel step size b/w frames
+% dxy:   horizontal / vertical pixel step size b/w frames
 % fStep:    skips frames (for testing) (default=1 no skipping)
 % BitDepth: 8 or 16 (only tested for PNG)
 % pWidth: Width of bar
@@ -85,15 +84,15 @@ if nargin<3 || isempty(mtranslate), mtranslate = 'horizslide'; end
 
 if nargin<4 || isempty(textureSel), textureSel = 'vertbar'; end
 
-if nargin<5 || isempty(nFrame), nFrame = 256; end
+if nargin<5 || isempty(nFrame), nFrame = 10; end
 
 if nargin<6 || isempty(nRow), nRow = 512; nCol = 512; end
 
-if nargin<8 || isempty(dx), dx = 1; dy = 1; end
+if nargin<8 || isempty(dxy), dxy = [1, 1]; end
 
 if nargin<10 || isempty(fStep), fStep = 1; end
 
-if nargin<11 || isempty(BitDepth), BitDepth = 64; end
+if nargin<11 || isempty(BitDepth), BitDepth = 16; end
 
 if nargin<12 || isempty(pWidth), pWidth = 10; end
 
@@ -124,110 +123,13 @@ writeVid = ~isempty(movieType);
 %angleSel = 45; %degrees
 
 GaussSigma = 35;
-%% indices
-%indices for frame looping
-I = 1:fStep:nFrame;
-%indices for number of phantoms
-Iphantom = 1:nPhantom;
-if length(phantomSpacing)==1
-    for i = Iphantom
-    phantomSpacing(i) = phantomSpacing(1) * i;
-    %TODO add time-dependant spacing
-    end
-end
-%% initialize
-[bgminmax,data,myClass] = OFgenParamInit(BitDepth,nRow,nCol,nFrame);
-
-if playVideo
-%h.f = figure('pos',[250 250 560 600]);
-h.f = figure(1); clf
-h.ax = axes('parent',h.f);
-%h.img = imshow(nan(nRow,nCol),'parent',h.ax,'DisplayRange',bgminmax);
-h.img = imagesc(nan(nRow,nCol));
-colormap('gray')
-axis('image')
-set(h.ax,'ydir','normal')
-axis(h.ax,'on')
-h.t = title('');
-else h.img = [];
-end
-
 
 %% create surface texture
-bg = phantomTexture(textureSel,myClass,nRow,nCol,bgminmax,pWidth,GaussSigma);
-
-%% write AVI video
-fPrefix = [mtranslate,'-',textureSel,'-'];
-try
-    if any(strcmpi({'lossless','mjpeg','avi'},movieType))
-
-        switch lower(movieType)
-            case 'lossless'
-                writeObj = VideoWriter([fPrefix,'.mj2'], 'Archival');
-                writeObj.MJ2BitDepth = BitDepth; %Mono16
-            case {'mjpeg','avi'}
-                writeObj = VideoWriter([fPrefix,'.avi'],'Motion JPEG AVI');
-                writeObj.Quality = 100; %trying to avoid compression artifacts--these images are highly compressible anyway
-        end
-
-        writeObj.FrameRate = 10;
-        open(writeObj)
-    else 
-        writeObj = [];
-    end
-catch 
-    error('Writing movie files directly must be done in Matlab R2012a or newer')
-end
+[bg,bgminmax,data,myClass] = phantomTexture(textureSel,nRow,nCol,nFrame,pWidth,GaussSigma,BitDepth);
 
 %% do translation
-data = translateTexture(bg,data,h,I,Iphantom,dx,nRow,nCol,myClass,oldWay,swirlParam,phantomSpacing,writeObj,writeVid,playVideo,movieType,fPrefix,nFrame,mtranslate);
-
-
-close(writeObj)
-
-try display([num2str(compTime,'%0.1f'),' seconds required to compute phantom']), end
+data = translateTexture(bg,data,fStep,dxy,myClass,oldWay,swirlParam,nPhantom,phantomSpacing,textureSel,writeVid,playVideo,movieType,mtranslate);
 
 if nargout>0, varargout{1} = data; end %don't send out huge data if not requested
 
 end %function
-
-%%
-
-function [bgminmax,data,myClass] = OFgenParamInit(BitDepth,nRow,nCol,nFrame)
-
-if BitDepth == 8 || BitDepth == 16
-    myClass = ['uint',int2str(BitDepth)];
-    myInt = str2func(myClass);
-    bgMax = myInt(2^BitDepth - 1);
-elseif BitDepth == 32
-    myClass = 'single';
-    bgMax = 1; %normalize
-    myInt = str2func(myClass);
-elseif BitDepth == 64
-    myClass = 'double';
-    bgMax = 1; %normalize
-    myInt = str2func(myClass);
-else
-    error(['unknown bit depth ',int2str(BitDepth)])
-end
-
-
-
-bgMin = myInt(0);
-
-
-data = zeros(nRow,nCol,nFrame,myClass); %initialize all frame
-  display(['max,min pixel intensities for ',myClass,' are taken to be: ',num2str(bgMin),',',num2str(bgMax)])
-
-bgminmax = [bgMin,bgMax];
-
-end %function
-
-function dataFrame = doShearRight(bg,i,nFrame,dx,nRow,nCol,oldWay,fillValue)
-%display(i)
-           T = [1,0,0;...
-               (nFrame-i*dx)/nFrame,1,0;...
-                 0,0,1];
-
- dataFrame = doTform(T,bg,oldWay,nRow,nCol,fillValue);
-end
