@@ -1,9 +1,7 @@
-function data = translateTexture(bg,data,fStep,dxy,myClass,oldWay,swirlParam,nPhantom, phantomSpacing,textureSel,writeVid,playVideo,movieType,mtranslate,pWidth,BitDepth)
-
+function data = translateTexture(bg,data,oldWay,swirlParam,U)
+isoct = isoctave;
 %% need this for when this function is called by itself using Oct2Py/Octave
-try
- fspecial('average',1,1);
-catch
+if isoct
  pkg load image
 end
 
@@ -15,7 +13,7 @@ try
     swstr = swirlParam.strength; swrad = swirlParam.radius;
 end
 %% init figure
-if playVideo
+if U.playvideo
     %h.f = figure('pos',[250 250 560 600]);
     h.f = figure(1); clf
     h.ax = axes('parent',h.f);
@@ -32,35 +30,29 @@ end
 
 %% multiple phantoms
 %indices for frame looping
-I = 1:fStep:nFrame;
-%indices for number of phantoms
-Iphantom = 1:nPhantom;
-if length(phantomSpacing)==1
-    for i = Iphantom
-    phantomSpacing(i) = phantomSpacing(1) * i;
-    %TODO add time-dependant spacing
-    end
+I = 1:U.fstep:U.nframe;
+%%
+[fPrefix,writeObj]= setupvid(U.translate, U.texture, U.movietype);
+%%
+if ~oldWay
+    RA = imref2d([nCol,nRow],[1 nCol],[1 nRow]);
 end
-%%
-[fPrefix,writeObj]= setupvid(mtranslate,textureSel,movieType);
-%%
-
 
 %if isempty(mtranslate), data=[]; return, end
-switch lower(mtranslate)
+switch lower(U.translate)
     case 'swirlstill' %currently, swirl starts off weak, and increases in strength
-        swirlParam.x0(1:length(swirlParam.x0)) = pWidth %FIXME
+        swirlParam.x0(1:length(swirlParam.x0)) = U.fwidth; %FIXME
         display('The Swirl algorithm is alpha-testing--needs manual positioning help')
         for i = I
 
            data(:,:,i) = makeSwirl(bg,...
                                  swx0,swy0,...
                                  swstr * (i-1), swrad,...
-                                 false,fillValue,BitDepth);
-           doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
+                                 false,fillValue,U.bitdepth);
+           doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
     case 'shearrightswirl'
-        swx0(1:length(swy0)) = centerCol %FIXME
+        swx0(1:length(swy0)) = centerCol; %FIXME
         %method: swirl, then shear
 
         %parfor i = 1:fStep:nFrame
@@ -74,37 +66,37 @@ switch lower(mtranslate)
             %step 2: shear
             data(:,:,i) = doShearRight(dataFrame,i,nFrame,dxy(1),nRow,nCol,oldWay);
 
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
+            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
 
     case 'still'
         for i = I
             data(:,:,i) = bg;
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
+            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
     case 'rotate360ccw'
         for i = I
             q = (nFrame-i)/nFrame*360; %degrees
             data(:,:,i) = imrotate(bg,q,'bilinear','crop');
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
+            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
     case 'rotate180ccw'
         for i = I
             q = (nFrame-i)/nFrame*180; %degrees
             data(:,:,i) = imrotate(bg,q,'bilinear','crop');
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
+            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
     case 'rotate90ccw'
         for i = I
             q = (nFrame-i)/nFrame*90; %degrees
             data(:,:,i) = imrotate(bg,q,'bilinear','crop');
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
+            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
     case 'shearright'
         for i = I
             data(:,:,i) = doShearRight(bg,i,nFrame,dxy(1),nRow,nCol,oldWay,fillValue);
 
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
+            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
 
     case 'diagslide'
@@ -113,53 +105,53 @@ switch lower(mtranslate)
                    0,1,0
                 -nFrame+i*dxy(1),  -nFrame+i*dxy(2),  1];
 
-            data(:,:,i) = doTform(T,bg,oldWay,nRow,nCol,fillValue);
+            data(:,:,i) = doTform(T,RA,bg,oldWay,nRow,nCol,fillValue);
 
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
+            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
 
     case 'horizslide'
         display(['Horizontally moving feature, dim: ',num2str(size(data))])
         %parfor i=I
         for i=I
-          tmpData = zeros(nRow,nCol,myClass);
-          for iPhantom = Iphantom
+          % imtranslate ~50% faster than doTform way
+          if isoct
+            data(:,:,i) = imtranslate(bg,[-nFrame+i*U.dxy(1), 0]); 
+          else %octave 4.0 with image 2.4.0 revised in 2013 still has messed-up imtranslate that wraps
+            %data(:,:,i) = imtranslate(bg,-nFrame+i*U.dxy(1), 0,'wrap');  %NO
             T =   [1,0,0
                    0,1,0
-                  -nFrame+i*dxy(1)+phantomSpacing(iPhantom), 0, 1];
-
-            tmpData = tmpData + doTform(T,bg,oldWay,nRow,nCol,fillValue);
-          end %for iPhantom
-          data(:,:,i) = tmpData;
-          %data(:,:,i) = imtranslate(bg,-nFrame+i*dxy(1), 0); %broken in Octave 3.8.1
-          doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix) 
+                  -nFrame+i*U.dxy(1), 0, 1];
+            data(:,:,i)= doTform(T,RA,bg,oldWay,nRow,nCol,fillValue);
+          end
+          doVid(writeObj,data(:,:,i),U,h,i,fPrefix) 
         end %for i
 
-        doWriteVid(writeObj,data,writeVid,playVideo,movieType,fPrefix)
+        doWriteVid(writeObj,data,U)
 
     case 'vertslide'
         for i = I
             T =   [1,0,0
                    0,1,0
-                   0,-nFrame+i*dxy(2), 1];
+                   0,-nFrame+i*U.dxy(2), 1];
 
-            data(:,:,i) = doTform(T,bg,oldWay,nRow,nCol,fillValue);
+            data(:,:,i) = doTform(T,RA,bg,oldWay,U.nrow,U.ncol,fillValue);
 
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
+            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
 
     otherwise 
-        try, close(writeObj), end
-        error(['Unknown motion method ',mtranslate,' specified'])
+        try close(writeObj), end
+        error(['Unknown motion method ',U.translate,' specified'])
 end %switch
-try,close(writeObj),end
+try close(writeObj),end
 end %function
 
-function doVid(writeObj,dataFrame,writeVid,playVideo,movieType,hImg,i,fPrefix)
+function doVid(writeObj,dataFrame,U,hImg,i,fPrefix)
 % this only works for NON-parfor methods!
 %
-if writeVid
-    switch lower(movieType)
+if ~isempty(U.movietype)
+    switch lower(U.movietype)
         case {'lossless','mjpeg','avi'}
             writeVideo(writeObj,dataFrame)
         case 'png'
@@ -169,17 +161,16 @@ if writeVid
     end
 end
 
-if playVideo
+if U.playvideo
     set(hImg.img,'cdata',dataFrame)
     set(hImg.t,'string',['Frame ',int2str(i)])
-    pause(0.01)
+    pause(0.001)
 end
 end %function
 
-function data = doTform(T,bg,oldWay,nRow,nCol,fillValue)
+function data = doTform(T,RA,bg,oldWay,nRow,nCol,fillValue)
     if ~oldWay  %new way
         tform = affine2d(T);
-        RA = imref2d([nCol,nRow],[1 nCol],[1 nRow]);
         data = imwarp(bg,tform,'outputView',RA);
     else % old way
 
@@ -200,8 +191,8 @@ function data = doTform(T,bg,oldWay,nRow,nCol,fillValue)
 
 end %function
 
-function [fPrefix,writeObj] = setupvid(mtranslate,textureSel,movieType)
-fPrefix = [mtranslate,'-',textureSel,'-'];
+function [fPrefix,writeObj] = setupvid(translate,textureSel,movieType)
+fPrefix = [translate,'-',textureSel,'-'];
 try
     if any(strcmpi({'lossless','mjpeg','avi'},movieType))
 
@@ -232,5 +223,15 @@ function dataFrame = doShearRight(bg,i,nFrame,dx,nRow,nCol,oldWay,fillValue)
                  0,0,1];
 
  dataFrame = doTform(T,bg,oldWay,nRow,nCol,fillValue);
+end %function
+
+function doWriteVid(writeObj,data,U)
+% this function is for those methods using parfor
+if ~isempty(U.movietype)
+    [nRow,nCol,nFrame] = size(data);
+
+    writeVideo(writeObj,reshape(data,nRow,nCol,1,nFrame))
+end 
+
 end %function
 

@@ -5,9 +5,8 @@
 % .pgm output if using with Black Robust Flow estimator
 %
 %
-function varargout = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureSel,nFrame,...
-                        nRow,nCol,dxy,fStep,BitDepth,pWidth,nPhantom,phantomSpacing,swirlParam)
-% [data] = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureSel,nFrame,nRow,nCol,dxy,fStep,BitDepth,pWidth,swirlParam)
+function varargout = RunGenOFtestPattern(varargin)
+% [data] = RunGenOFtestPattern()
 % EXAMPLE
 %
 % 3 parallel vertical bars
@@ -32,7 +31,7 @@ function varargout = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureS
 %            'png', series of PNG images
 %            'Lossless', Motion JPEG 2000
 %            'MJPEG', lossy .avi % can cause false artifacts due to compression, use with great care
-% mtranslate: 'swirl'
+% translate: 'swirl'
 %               'rotate360ccw'
 %               'rotate180ccw'
 %               'rotate90ccw'
@@ -75,30 +74,18 @@ function varargout = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureS
 % newway horizslide vertbar, no play: 04.2 sec. R2013b using 1 CPU core
 % oldway horizslide vertbar, no play: 14.3 sec. octave 3.8.1
 
-
-if nargin<1 || isempty(playVideo), playVideo = true; end
-
-if nargin<2, movieType = []; end
-
-if nargin<3 || isempty(mtranslate), mtranslate = 'swirlstill'; end
-
-if nargin<4 || isempty(textureSel), textureSel = 'vertbar'; end
-
-if nargin<5 || isempty(nFrame), nFrame = 10; end
-
-if nargin<6 || isempty(nRow), nRow = 512; nCol = 512; end
-
-if nargin<8 || isempty(dxy), dxy = [1, 1]; end
-
-if nargin<10 || isempty(fStep), fStep = 1; end
-
-if nargin<11 || isempty(BitDepth), BitDepth = 16; end
-
-if nargin<12 || isempty(pWidth), pWidth = 10; end
-
-if nargin<13 || isempty(nPhantom), nPhantom=1; end
-
-if nargin<14 || isempty(phantomSpacing) || all(phantomSpacing==0), phantomSpacing = 0; end
+p = inputParser;
+addParamValue(p,'texture','vertsine')
+addParamValue(p,'playvideo',true)
+addParamValue(p,'movietype',[])
+addParamValue(p,'translate','vertslide')
+addParamValue(p,'nrow',512), addParamValue(p,'ncol',512)
+addParamValue(p,'nframe',10), addParamValue(p,'fstep',1)
+addParamValue(p,'dxy',[1,1])
+addParamValue(p,'bitdepth',16)
+addParamValue(p,'fwidth',30)
+parse(p,varargin{:})
+U = p.Results;
 
 if nargin<15 || isempty(swirlParam)
     %swirlParam.strength = []; swirlParam.radius =[]; swirlParam.x0 = []; swirlParam.y0=[];
@@ -120,18 +107,11 @@ else % octave
   % display(nRow); display(nCol)
 end
 
-writeVid = ~isempty(movieType);
-
-%angleSel = 45; %degrees
-
-GaussSigma = 35;
-
 %% create surface texture
-[bg,bgminmax,data,myClass] = phantomTexture(textureSel,nRow,nCol,nFrame,pWidth,GaussSigma,BitDepth);
+[bg,data] = phantomTexture(U);
 
 %% do translation
-data = translateTexture(bg,data,fStep,dxy,myClass,oldWay,swirlParam,nPhantom,phantomSpacing,textureSel,
-  writeVid,playVideo,movieType,mtranslate,pWidth,BitDepth);
+data = translateTexture(bg,data,oldWay,swirlParam,U);
 
 if nargout>0, varargout{1} = data; end %don't send out huge data if not requested
 
