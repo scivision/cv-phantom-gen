@@ -16,8 +16,8 @@ def genphantom(xy,writeformat,texture,motion,dtype,fwidth):
     else:
         octexe=None
     oc = Oct2Py(executable=octexe,oned_as='column',convert_to_float=True,timeout=5)
-    #bg = oc.phantomTexture(texture,dtype,xy[1],xy[0],bgmaxval(dtype),fwidth)
-    bg = oc.zeros(10)
+    bg = oc.phantomTexture(texture,dtype,xy[1],xy[0],bgmaxval(dtype),fwidth)
+
 
     return bg
 
