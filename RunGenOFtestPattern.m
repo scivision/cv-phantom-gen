@@ -5,9 +5,9 @@
 % .pgm output if using with Black Robust Flow estimator
 %
 %
-function varargout = RunGenOFtestPattern(playVideo,movieType,translate,textureSel,nFrame,...
+function varargout = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureSel,nFrame,...
                         nRow,nCol,dx,dy,fStep,BitDepth,pWidth,nPhantom,phantomSpacing,swirlParam)
-% [data] = RunGenOFtestPattern(playVideo,movieType,translate,textureSel,nFrame,nRow,nCol,dx,dy,fStep,BitDepth,pWidth,swirlParam)
+% [data] = RunGenOFtestPattern(playVideo,movieType,mtranslate,textureSel,nFrame,nRow,nCol,dx,dy,fStep,BitDepth,pWidth,swirlParam)
 % EXAMPLE
 %
 % 3 parallel vertical bars
@@ -32,7 +32,7 @@ function varargout = RunGenOFtestPattern(playVideo,movieType,translate,textureSe
 %            'png', series of PNG images
 %            'Lossless', Motion JPEG 2000
 %            'MJPEG', lossy .avi % can cause false artifacts due to compression, use with great care
-% translate: 'swirl'
+% mtranslate: 'swirl'
 %               'rotate360ccw'
 %               'rotate180ccw'
 %               'rotate90ccw'
@@ -81,7 +81,7 @@ if nargin<1 || isempty(playVideo), playVideo = true; end
 
 if nargin<2, movieType = []; end
 
-if nargin<3 || isempty(translate), translate = 'horizslide'; end
+if nargin<3 || isempty(mtranslate), mtranslate = 'horizslide'; end
 
 if nargin<4 || isempty(textureSel), textureSel = 'vertbar'; end
 
@@ -157,7 +157,7 @@ end
 bg = phantomTexture(textureSel,myClass,nRow,nCol,bgminmax,pWidth,GaussSigma);
 
 %% write AVI video
-fPrefix = [translate,'-',textureSel,'-'];
+fPrefix = [mtranslate,'-',textureSel,'-'];
 try
     if any(strcmpi({'lossless','mjpeg','avi'},movieType))
 
@@ -180,7 +180,7 @@ catch
 end
 
 %% do translation
-data = translateTexture(bg,data,h,I,Iphantom,dx,nRow,nCol,myClass,oldWay,swirlParam,phantomSpacing,writeObj,writeVid,playVideo,movieType,fPrefix,nFrame,translate);
+data = translateTexture(bg,data,h,I,Iphantom,dx,nRow,nCol,myClass,oldWay,swirlParam,phantomSpacing,writeObj,writeVid,playVideo,movieType,fPrefix,nFrame,mtranslate);
 
 
 close(writeObj)
