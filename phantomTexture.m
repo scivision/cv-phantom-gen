@@ -21,7 +21,6 @@ switch lower(textureSel)
         bg = double(bgminmax(2)).*bg./max(max(bg)); %normalize to full bit range
         bg = myInt(bg); %cast to desired class
     case {'vertsine'}
-        centerCol = pWidth; %<update>
         bgr = zeros(1,nCol,'double'); %yes, double to avoid quantization
         bg = zeros(nRow,nCol,dtype);
         bgr(pWidth-pWidth/2:pWidth+pWidth/2-1) = sind(linspace(0,180,pWidth)); %don't do int8 yet or you'll quantize it to zero!
@@ -57,7 +56,6 @@ switch lower(textureSel)
             nCol/2-floor(pWidth/2): nCol/2+ floor(pWidth/2)  ) = bgminmax(2); %vertical line
         bg = bg + imrotate(bg,45,'bilinear','crop'); %diagonal line
     case 'vertbar' %vertical bar, starts center of image
-        centerCol = nRow/2;
         bg = zeros(nRow,nCol,dtype);
 
         %bg(1:nRow,end-4:end) = bgMaxVal; %vertical line, top to bottom
