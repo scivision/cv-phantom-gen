@@ -5,9 +5,9 @@
 % .pgm output if using with Black Robust Flow estimator
 %
 %
-function varargout = RunGenOFtestPattern(playVideo,movieType,OFtestMethod,textureSel,nFrame,...
+function varargout = RunGenOFtestPattern(playVideo,movieType,translate,textureSel,nFrame,...
                         nRow,nCol,dx,dy,fStep,BitDepth,pWidth,nPhantom,phantomSpacing,swirlParam)
-% [data] = RunGenOFtestPattern(playVideo,movieType,OFtestMethod,textureSel,nFrame,nRow,nCol,dx,dy,fStep,BitDepth,pWidth,swirlParam)
+% [data] = RunGenOFtestPattern(playVideo,movieType,translate,textureSel,nFrame,nRow,nCol,dx,dy,fStep,BitDepth,pWidth,swirlParam)
 % EXAMPLE
 %
 % 3 parallel vertical bars
@@ -32,7 +32,7 @@ function varargout = RunGenOFtestPattern(playVideo,movieType,OFtestMethod,textur
 %            'png', series of PNG images
 %            'Lossless', Motion JPEG 2000
 %            'MJPEG', lossy .avi % can cause false artifacts due to compression, use with great care
-% OFtestMethod: 'swirl'
+% translate: 'swirl'
 %               'rotate360ccw'
 %               'rotate180ccw'
 %               'rotate90ccw'
@@ -81,7 +81,7 @@ if nargin<1 || isempty(playVideo), playVideo = true; end
 
 if nargin<2, movieType = []; end
 
-if nargin<3 || isempty(OFtestMethod), OFtestMethod = 'horizslide'; end
+if nargin<3 || isempty(translate), translate = 'horizslide'; end
 
 if nargin<4 || isempty(textureSel), textureSel = 'vertbar'; end
 
@@ -105,11 +105,8 @@ if nargin<15 || isempty(swirlParam)
     swirlParam.strength = []; swirlParam.radius =[]; swirlParam.x0 = []; swirlParam.y0=[];
 end
 
-fillValue = 0;
-
 if ~isoctave
     if verLessThan('matlab','8.1'), %R2013a
-        warning('Some image toolbox functions REQUIRE R2013a or newer')
         oldWay = true; %uses slower transformation algorithms
     else
         oldWay = false;
@@ -160,139 +157,31 @@ end
 bg = phantomTexture(textureSel,myClass,nRow,nCol,bgminmax,pWidth,GaussSigma);
 
 %% write AVI video
- fPrefix = [OFtestMethod,'-',textureSel,'-'];
- try
-if any(strcmpi({'lossless','mjpeg','avi'},movieType))
+fPrefix = [translate,'-',textureSel,'-'];
+try
+    if any(strcmpi({'lossless','mjpeg','avi'},movieType))
 
-switch lower(movieType)
-    case 'lossless'
-writeObj = VideoWriter([fPrefix,'.mj2'],...
-                        'Archival');
-writeObj.MJ2BitDepth = BitDepth; %Mono16
-    case {'mjpeg','avi'}
-writeObj = VideoWriter([fPrefix,'.avi'],...
-                        'Motion JPEG AVI');
-writeObj.Quality = 100; %trying to avoid compression artifacts--these images are highly compressible anyway
+        switch lower(movieType)
+            case 'lossless'
+                writeObj = VideoWriter([fPrefix,'.mj2'], 'Archival');
+                writeObj.MJ2BitDepth = BitDepth; %Mono16
+            case {'mjpeg','avi'}
+                writeObj = VideoWriter([fPrefix,'.avi'],'Motion JPEG AVI');
+                writeObj.Quality = 100; %trying to avoid compression artifacts--these images are highly compressible anyway
+        end
+
+        writeObj.FrameRate = 10;
+        open(writeObj)
+    else 
+        writeObj = [];
+    end
+catch 
+    error('Writing movie files directly must be done in Matlab R2012a or newer')
 end
 
-writeObj.FrameRate = 10;
-open(writeObj)
-else writeObj = [];
-end
- catch, error('Writing movie files directly must be done in Matlab R2012a or newer')
- end
+%% do translation
+data = translateTexture(bg,data,h,I,Iphantom,dx,nRow,nCol,myClass,oldWay,swirlParam,phantomSpacing,writeObj,writeVid,playVideo,movieType,fPrefix,nFrame,translate);
 
-
-  %display(I)
-swx0 = swirlParam.x0; swy0 = swirlParam.y0;
-swstr = swirlParam.strength; swrad = swirlParam.radius;
-%
-switch lower(OFtestMethod)
-    case 'swirlstill' %currently, swirl starts off weak, and increases in strength
-        swirlParam.x0(1:length(swirlParam.x0)) = centerCol %FIXME
-        display('The Swirl algorithm is alpha-testing--needs manual positioning help')
-        for i = I
-
-           data(:,:,i) = makeSwirl(bg,...
-                                 swx0,swy0,...
-                                 swstr * (i-1), swrad,...
-                                 false,fillValue,BitDepth);
-           doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end
-    case 'shearrightswirl'
-        swx0(1:length(swy0)) = centerCol %FIXME
-        %method: swirl, then shear
-        tic
-
-        %parfor i = 1:fStep:nFrame
-        for i = I
-
-            %Step 1: swirl
-            dataFrame = makeSwirl(bg,...
-                                 swx0,swy0,...
-                                 swstr * i, swrad,...
-                                 false,0,BitDepth);
-            %step 2: shear
-            data(:,:,i) = doShearRight(dataFrame,i,nFrame,dx,nRow,nCol,oldWay);
-
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end
-        compTime = toc;
-
-    case 'still'
-        for i = I
-            data(:,:,i) = bg;
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end
-    case 'rotate360ccw'
-        for i = I
-            q = (nFrame-i)/nFrame*360; %degrees
-            data(:,:,i) = imrotate(bg,q,'bilinear','crop');
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end
-    case 'rotate180ccw'
-        for i = I
-            q = (nFrame-i)/nFrame*180; %degrees
-            data(:,:,i) = imrotate(bg,q,'bilinear','crop');
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end
-    case 'rotate90ccw'
-        for i = I
-            q = (nFrame-i)/nFrame*90; %degrees
-            data(:,:,i) = imrotate(bg,q,'bilinear','crop');
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end
-    case 'shearright'
-        for i = I
-            data(:,:,i) = doShearRight(bg,i,nFrame,dx,nRow,nCol,oldWay,fillValue);
-
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end
-
-    case 'diagslide'
-        for i = I
-            T =   [1,0,0
-                   0,1,0
-                -nFrame+i*dx,  -nFrame+i*dy,  1];
-
-            data(:,:,i) = doTform(T,bg,oldWay,nRow,nCol,fillValue);
-
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end
-
-    case 'horizslide'
-        display('Horizontally moving wall')
-        display(size(data))
-        close(h.f) % won't use it
-        parfor i=I
-          tmpData = zeros(nRow,nCol,myClass);
-          for iPhantom = Iphantom
-            T =   [1,0,0
-                   0,1,0
-                  -nFrame+i*dx+phantomSpacing(iPhantom), 0, 1];
-
-            tmpData = tmpData + doTform(T,bg,oldWay,nRow,nCol,fillValue);
-          end %for iPhantom
-          data(:,:,i) = tmpData;
-             %data(:,:,i) = imtranslate(bg,-nFrame+i*dx, 0); %broken in Octave 3.8.1
-        end %for i
-        try close(h.f), end
-
-        doWriteVid(writeObj,data,writeVid,playVideo,movieType,fPrefix)
-
-    case 'vertslide'
-        for i = I
-            T =   [1,0,0
-                   0,1,0
-                   0,-nFrame+i*dy, 1];
-
-            data(:,:,i) = doTform(T,bg,oldWay,nRow,nCol,fillValue);
-
-            doVid(writeObj,data(:,:,i),writeVid,playVideo,movieType,h,i,fPrefix)
-        end
-
-    otherwise, close(writeObj),error('Unknown method specified')
-end
 
 close(writeObj)
 
@@ -300,7 +189,9 @@ try display([num2str(compTime,'%0.1f'),' seconds required to compute phantom']),
 
 if nargout>0, varargout{1} = data; end %don't send out huge data if not requested
 
-end
+end %function
+
+%%
 
 function [bgminmax,data,myClass] = OFgenParamInit(BitDepth,nRow,nCol,nFrame)
 
@@ -330,82 +221,7 @@ data = zeros(nRow,nCol,nFrame,myClass); %initialize all frame
 
 bgminmax = [bgMin,bgMax];
 
-end
-
-function data = doTform(T,bg,oldWay,nRow,nCol,fillValue)
-            if ~oldWay  %new way
-                tform = affine2d(T);
-                RA = imref2d([nCol,nRow],[1 nCol],[1 nRow]);
-                data = imwarp(bg,tform,'outputView',RA);
-            else % old way
-
-                tform = maketform('affine',T);   %#ok<MTFA1>
-
-                data = imtransform(bg,tform,'bilinear',...
-                     'Udata',[1 nCol],...
-                     'Vdata',[1 nRow],...
-                     'Xdata',[1 nCol],...
-                     'Ydata',[1 nRow],...
-                     'fillvalues',fillValue,...
-                     'size',[nRow,nCol]); %#ok<DIMTRNS>
-
-            end
-%display(['bg ',int2str(size(bg))])
-%display(nCol); display(nRow)
-%display(['data size ',int2str(size(data))])
-
 end %function
-
-function doVid(writeObj,dataFrame,writeVid,playVideo,movieType,hImg,i,fPrefix)
-% this only works for NON-parfor methods!
-%
-if writeVid
-    switch lower(movieType)
-        case {'lossless','mjpeg','avi'}, writeVideo(writeObj,dataFrame)
-        case 'png', imwrite(dataFrame,[fPrefix,int2str(i),'.png'],'png')
-        case 'pgm', imwrite(dataFrame,[fPrefix,int2str(i),'.pgm'],'pgm')
-    end
-end
-if playVideo
-    set(hImg.img,'cdata',dataFrame)
-    set(hImg.t,'string',['Frame ',int2str(i)])
-    pause(0.01)
-end
-end
-
-function doWriteVid(writeObj,data,writeVid,playVideo,movieType,fPrefix)
-% this function is for those methods using parfor
-if writeVid
-    [nRow,nCol,nFrame] = size(data);
-    switch lower(movieType)
-
-        case {'lossless','mjpeg','avi'},
-            writeVideo(writeObj,reshape(data,nRow,nCol,1,nFrame))
-
-        otherwise
-            tmpVidFN = [fPrefix,'.avi'];
-            display(['trying to make video ',tmpVidFN,' then convert to ',movieType])
-            try
-               writeObj = VideoWriter(tmpVidFN, 'Motion JPEG AVI');
-               writeObj.Quality = 100;
-               open(writeObj)
-               writeVideo(writeObj,reshape(data,nRow,nCol,1,nFrame))
-               display(['attempting to convert ',tmpVidFN,' to ',movieType,' via ImageMagick via command'])
-               ffmpegcmd = ['convert -verbose ',tmpVidFN,' -type Grayscale ',fPrefix,'%03d.pgm'];
-               display(ffmpegcmd)
-               unix(ffmpegcmd)
-            catch
-                display(['Im sorry, I was unable to complete conversion of ',tmpVidFN,' to ',movieType])
-                lasterr
-            end %try
-
-    end %switch
-
-end
-if playVideo && ~isoctave
-   implay(data)
-end
-end
 
 function dataFrame = doShearRight(bg,i,nFrame,dx,nRow,nCol,oldWay,fillValue)
 %display(i)
