@@ -10,9 +10,12 @@ switch lower(textureSel)
         bg = myInt(bg); %cast to desired class
     case {'vertsine'}
         centerCol = pWidth; %<update>
-        bg = zeros(1,nCol,'double'); %yes, double to avoid quantization
-        bg(pWidth-pWidth/2:pWidth+pWidth/2-1) = sind(linspace(0,180,pWidth)); %don't do int8 yet or you'll quantize it to zero!
-        bg = double(bgMaxVal) .* repmat(bg,nRow,1);
+        bgr = zeros(1,nCol,'double'); %yes, double to avoid quantization
+        bg = zeros(nRow,nCol,dtype);
+        bgr(pWidth-pWidth/2:pWidth+pWidth/2-1) = sind(linspace(0,180,pWidth)); %don't do int8 yet or you'll quantize it to zero!
+        rowind = nRow*1/4:nRow*3/4;
+        %bg = double(bgMaxVal) .* repmat(bg,nRow,1);
+	      bg(rowind,:) = double(bgMaxVal) .* repmat(bgr,length(rowind),1);
         bg = myInt(bg);    % cast to desired class
     case 'laplacian'
         bg = abs(fspecial('log',[nRow,nCol],50));
