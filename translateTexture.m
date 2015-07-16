@@ -43,7 +43,7 @@ end
 switch lower(U.motion)
     case 'swirlstill' %currently, swirl starts off weak, and increases in strength
         swirlParam.x0(1:length(swirlParam.x0)) = U.fwidth; %FIXME
-        display('The Swirl algorithm is alpha-testing--needs manual positioning help')
+        display('The Swirl algorithm is alpha-testing--needs manual positioning help--try vertbar texture')
         for i = I
 
            data(:,:,i) = makeSwirl(bg,...
@@ -53,7 +53,8 @@ switch lower(U.motion)
            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
     case 'shearrightswirl'
-        swx0(1:length(swy0)) = centerCol; %FIXME
+        display('swirl location not matching shear right now? shear going wrong way?')
+        swx0(1:length(swy0)) = U.fwidth; %FIXME
         %method: swirl, then shear
 
         %parfor i = 1:fStep:nFrame
@@ -62,10 +63,10 @@ switch lower(U.motion)
             %Step 1: swirl
             dataFrame = makeSwirl(bg,...
                                  swx0,swy0,...
-                                 swstr * i, swrad,...
-                                 false,0,BitDepth);
+                                 swstr * (i-1), swrad,...
+                                 false,fillValue,U.bitdepth);
             %step 2: shear
-            data(:,:,i) = doShearRight(dataFrame,RA,i,nFrame,U.dxy(1),U.rowcol,oldWay);
+            data(:,:,i) = doShearRight(dataFrame,RA,i,nFrame,U.dxy(1),U.rowcol,oldWay,fillValue);
 
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
