@@ -5,7 +5,7 @@ if isoct
  pkg load image
 end
 
-[nRow,nCol,nFrame] = size(data);
+nRow = U.rowcol(1); nCol = U.rowcol(2); nFrame = size(data,3);
 fillValue = 0;
 %display(I)
 try
@@ -13,12 +13,13 @@ try
     swstr = swirlParam.strength; swrad = swirlParam.radius;
 end
 %% init figure
+%% init figure
 if U.playvideo
     %h.f = figure('pos',[250 250 560 600]);
     h.f = figure(1); clf
     h.ax = axes('parent',h.f);
     %h.img = imshow(nan(nRow,nCol),'parent',h.ax,'DisplayRange',bgminmax);
-    h.img = imagesc(nan(nRow,nCol));
+    h.img = imagesc(nan(U.rowcol));
     colormap('gray')
     axis('image')
     set(h.ax,'ydir','normal')
@@ -32,14 +33,14 @@ end
 %indices for frame looping
 I = 1:U.fstep:U.nframe;
 %%
-[fPrefix,writeObj]= setupvid(U.translate, U.texture, U.movietype);
+[fPrefix,writeObj]= setupvid(U.motion, U.texture, U.movietype);
 %%
 if ~oldWay
     RA = imref2d([nCol,nRow],[1 nCol],[1 nRow]);
 end
 
 %if isempty(mtranslate), data=[]; return, end
-switch lower(U.translate)
+switch lower(U.motion)
     case 'swirlstill' %currently, swirl starts off weak, and increases in strength
         swirlParam.x0(1:length(swirlParam.x0)) = U.fwidth; %FIXME
         display('The Swirl algorithm is alpha-testing--needs manual positioning help')
@@ -64,7 +65,7 @@ switch lower(U.translate)
                                  swstr * i, swrad,...
                                  false,0,BitDepth);
             %step 2: shear
-            data(:,:,i) = doShearRight(dataFrame,i,nFrame,dxy(1),nRow,nCol,oldWay);
+            data(:,:,i) = doShearRight(dataFrame,RA,i,nFrame,U.dxy(1),U.rowcol,oldWay);
 
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
@@ -94,7 +95,7 @@ switch lower(U.translate)
         end
     case 'shearright'
         for i = I
-            data(:,:,i) = doShearRight(bg,i,nFrame,dxy(1),nRow,nCol,oldWay,fillValue);
+            data(:,:,i) = doShearRight(bg,RA,i,nFrame,U.dxy(1),U.rowcol,oldWay,fillValue);
 
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
@@ -103,9 +104,9 @@ switch lower(U.translate)
         for i = I
             T =   [1,0,0
                    0,1,0
-                -nFrame+i*dxy(1),  -nFrame+i*dxy(2),  1];
+                -nFrame+i*U.dxy(1),  -nFrame+i*U.dxy(2),  1];
 
-            data(:,:,i) = doTform(T,RA,bg,oldWay,nRow,nCol,fillValue);
+            data(:,:,i) = doTform(T,RA,bg,oldWay,U.rowcol,fillValue);
 
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
@@ -122,7 +123,7 @@ switch lower(U.translate)
             T =   [1,0,0
                    0,1,0
                   -nFrame+i*U.dxy(1), 0, 1];
-            data(:,:,i)= doTform(T,RA,bg,oldWay,nRow,nCol,fillValue);
+            data(:,:,i)= doTform(T,RA,bg,oldWay,U.rowcol,fillValue);
           end
           doVid(writeObj,data(:,:,i),U,h,i,fPrefix) 
         end %for i
@@ -135,7 +136,7 @@ switch lower(U.translate)
                    0,1,0
                    0,-nFrame+i*U.dxy(2), 1];
 
-            data(:,:,i) = doTform(T,RA,bg,oldWay,U.nrow,U.ncol,fillValue);
+            data(:,:,i) = doTform(T,RA,bg,oldWay,U.rowcol,fillValue);
 
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
@@ -168,7 +169,8 @@ if U.playvideo
 end
 end %function
 
-function data = doTform(T,RA,bg,oldWay,nRow,nCol,fillValue)
+function data = doTform(T,RA,bg,oldWay,rowcol,fillValue)
+    nrow = rowcol(1); ncol=rowcol(2);
     if ~oldWay  %new way
         tform = affine2d(T);
         data = imwarp(bg,tform,'outputView',RA);
@@ -177,12 +179,12 @@ function data = doTform(T,RA,bg,oldWay,nRow,nCol,fillValue)
         tform = maketform('affine',T);   %#ok<MTFA1>
 
         data = imtransform(bg,tform,'bilinear',...
-             'Udata',[1 nCol],...
-             'Vdata',[1 nRow],...
-             'Xdata',[1 nCol],...
-             'Ydata',[1 nRow],...
+             'Udata',[1 ncol],...
+             'Vdata',[1 nrow],...
+             'Xdata',[1 ncol],...
+             'Ydata',[1 nrow],...
              'fillvalues',fillValue,...
-             'size',[nRow,nCol]); %#ok<DIMTRNS>
+             'size',rowcol); %#ok<DIMTRNS>
 
     end
 %display(['bg ',int2str(size(bg))])
@@ -216,13 +218,13 @@ end
 
 end %function
 
-function dataFrame = doShearRight(bg,i,nFrame,dx,nRow,nCol,oldWay,fillValue)
+function dataFrame = doShearRight(bg,RA,i,nFrame,dx,rowcol,oldWay,fillValue)
 %display(i)
            T = [1,0,0;...
                (nFrame-i*dx)/nFrame,1,0;...
                  0,0,1];
 
- dataFrame = doTform(T,bg,oldWay,nRow,nCol,fillValue);
+             dataFrame = doTform(T,RA,bg,oldWay,rowcol,fillValue);
 end %function
 
 function doWriteVid(writeObj,data,U)

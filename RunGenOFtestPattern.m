@@ -41,22 +41,19 @@ function varargout = RunGenOFtestPattern(varargin)
 %               'diagslide'
 %               'shearright'
 %
-% textureSel:   'vertBar'
-%               'uniformRandom'
+% texture:    'wall','vertbar','gaussian'
+%               'uniformrandom'
 %               'wall'
 %               'checkerboard'
 %               'xTriangle'
 %               'yTriangle'
 %
 % nFrame:     default 256 frames of video
-% nRow:         default 256 y-pixels
-% nCol:         default 256 x-pixels
+% rowcol:         default 512,512 rows,cols
 % dxy:   horizontal / vertical pixel step size b/w frames
-% fStep:    skips frames (for testing) (default=1 no skipping)
-% BitDepth: 8 or 16 (only tested for PNG)
-% pWidth: Width of bar
-% nPhantom: number of phantoms
-% phantomSpacing: scalar or nFramex1 vector
+% fstep:    skips frames (for testing) (default=1 no skipping)
+% bitdepth: 8 or 16 (only tested for PNG)
+% fwidth: Width of bar
 % swirlParam: parameters for swirl method only (blank otherwise)
 %               swirlParam.strength: vector of swirl strength
 %               swirlParam.x0: vector of swirl x-center
@@ -75,19 +72,21 @@ function varargout = RunGenOFtestPattern(varargin)
 % oldway horizslide vertbar, no play: 14.3 sec. octave 3.8.1
 
 p = inputParser;
-addParamValue(p,'texture','vertsine')
+addParamValue(p,'texture','vertsine') %#ok<*NVREPL> % need this for Octave 4.0 which doesn't have addParameter
 addParamValue(p,'playvideo',true)
 addParamValue(p,'movietype',[])
-addParamValue(p,'translate','vertslide')
-addParamValue(p,'nrow',512), addParamValue(p,'ncol',512)
-addParamValue(p,'nframe',10), addParamValue(p,'fstep',1)
+addParamValue(p,'motion','vertslide')
+addParamValue(p,'rowcol',[512,512])
+addParamValue(p,'nframe',50), addParamValue(p,'fstep',1)
 addParamValue(p,'dxy',[1,1])
 addParamValue(p,'bitdepth',16)
+addParamValue(p,'gaussiansigma',30)
 addParamValue(p,'fwidth',30)
+addParamValue(p,'swirl',[])
 parse(p,varargin{:})
 U = p.Results;
 
-if nargin<15 || isempty(swirlParam)
+if isempty(U.swirl)
     %swirlParam.strength = []; swirlParam.radius =[]; swirlParam.x0 = []; swirlParam.y0=[];
     swirlParam.x0=[256,256,256]; swirlParam.y0=[384,256,128]; 
     swirlParam.radius=40; swirlParam.strength=0.035;
@@ -104,7 +103,6 @@ else % octave
    page_screen_output(0)
    pkg load image
    oldWay = true; % octave 4.0.0 didn't have imwarp
-  % display(nRow); display(nCol)
 end
 
 %% create surface texture
