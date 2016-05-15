@@ -1,8 +1,7 @@
-function data = translateTexture(bg,data,oldWay,swirlParam,U)
-isoct = isoctave;
-%% need this for when this function is called by itself using Oct2Py/Octave
-if isoct
- pkg load image
+function data = translateTexture(bg,data,swirlParam,U)
+%% need this for when this function is called by itself using Oct2Py
+if isoctave
+    pkg load image
 end
 
 nRow = U.rowcol(1); nCol = U.rowcol(2); nFrame = size(data,3);
@@ -33,10 +32,16 @@ end
 %indices for frame looping
 I = 1:U.fstep:U.nframe;
 %%
-[fPrefix,writeObj]= setupvid(U.motion, U.texture, U.movietype);
+try
+    [fPrefix,writeObj]= setupvid(U.motion, U.texture, U.movietype);
+catch
+    fPrefix=[]; writeObj=[];
+end
 %%
-if ~oldWay
+if ~isoctave
     RA = imref2d([nCol,nRow],[1 nCol],[1 nRow]);
+else
+    RA =[];
 end
 
 %if isempty(mtranslate), data=[]; return, end
@@ -66,7 +71,7 @@ switch lower(U.motion)
                                  swstr * (i-1), swrad,...
                                  false,fillValue,U.bitdepth);
             %step 2: shear
-            data(:,:,i) = doShearRight(dataFrame,RA,i,nFrame,U.dxy(1),U.rowcol,oldWay,fillValue);
+            data(:,:,i) = doShearRight(dataFrame,RA,i,nFrame,U.dxy(1),U.rowcol,fillValue);
 
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
@@ -96,7 +101,7 @@ switch lower(U.motion)
         end
     case 'shearright'
         for i = I
-            data(:,:,i) = doShearRight(bg,RA,i,nFrame,U.dxy(1),U.rowcol,oldWay,fillValue);
+            data(:,:,i) = doShearRight(bg,RA,i,nFrame,U.dxy(1),U.rowcol,fillValue);
 
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
@@ -107,7 +112,7 @@ switch lower(U.motion)
                    0,1,0
                 -nFrame+i*U.dxy(1),  -nFrame+i*U.dxy(2),  1];
 
-            data(:,:,i) = doTform(T,RA,bg,oldWay,U.rowcol,fillValue);
+            data(:,:,i) = doTform(T,RA,bg,U.rowcol,fillValue);
 
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
@@ -117,14 +122,14 @@ switch lower(U.motion)
         %parfor i=I
         for i=I
           % imtranslate ~50% faster than doTform way
-          if isoct
+          if ~isempty(RA)
             data(:,:,i) = imtranslate(bg,[-nFrame+i*U.dxy(1), 0]); 
           else %octave 4.0 with image 2.4.0 revised in 2013 still has messed-up imtranslate that wraps
             %data(:,:,i) = imtranslate(bg,-nFrame+i*U.dxy(1), 0,'wrap');  %NO
             T =   [1,0,0
                    0,1,0
                   -nFrame+i*U.dxy(1), 0, 1];
-            data(:,:,i)= doTform(T,RA,bg,oldWay,U.rowcol,fillValue);
+            data(:,:,i)= doTform(T,RA,bg,U.rowcol,fillValue);
           end
           doVid(writeObj,data(:,:,i),U,h,i,fPrefix) 
         end %for i
@@ -137,7 +142,7 @@ switch lower(U.motion)
                    0,1,0
                    0,-nFrame+i*U.dxy(2), 1];
 
-            data(:,:,i) = doTform(T,RA,bg,oldWay,U.rowcol,fillValue);
+            data(:,:,i) = doTform(T,RA,bg,U.rowcol,fillValue);
 
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
@@ -152,7 +157,7 @@ end %function
 function doVid(writeObj,dataFrame,U,hImg,i,fPrefix)
 % this only works for NON-parfor methods!
 %
-if ~isempty(U.movietype)
+try
     switch lower(U.movietype)
         case {'lossless','mjpeg','avi'}
             writeVideo(writeObj,dataFrame)
@@ -167,12 +172,14 @@ if U.playvideo
     set(hImg.img,'cdata',dataFrame)
     set(hImg.t,'string',['Frame ',int2str(i)])
     pause(0.001)
-end
+end %if
+
 end %function
 
-function data = doTform(T,RA,bg,oldWay,rowcol,fillValue)
+
+function data = doTform(T,RA,bg,rowcol,fillValue)
     nrow = rowcol(1); ncol=rowcol(2);
-    if ~oldWay  %new way
+    if ~isempty(RA)  %new way
         tform = affine2d(T);
         data = imwarp(bg,tform,'outputView',RA);
     else % old way
@@ -219,18 +226,18 @@ end
 
 end %function
 
-function dataFrame = doShearRight(bg,RA,i,nFrame,dx,rowcol,oldWay,fillValue)
+function dataFrame = doShearRight(bg,RA,i,nFrame,dx,rowcol,fillValue)
 %display(i)
            T = [1,0,0;...
                (nFrame-i*dx)/nFrame,1,0;...
                  0,0,1];
 
-             dataFrame = doTform(T,RA,bg,oldWay,rowcol,fillValue);
+             dataFrame = doTform(T,RA,bg,rowcol,fillValue);
 end %function
 
 function doWriteVid(writeObj,data,U)
 % this function is for those methods using parfor
-if ~isempty(U.movietype)
+if ~isempty(writeObj) && ~isempty(U.movietype)
     [nRow,nCol,nFrame] = size(data);
 
     writeVideo(writeObj,reshape(data,nRow,nCol,1,nFrame))

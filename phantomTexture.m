@@ -89,8 +89,11 @@ end
 
 bgMin = cast(0,dtype);
 
-data = zeros([rowcol,nFrame],dtype); %initialize all frame
-  display(['max,min pixel intensities for ',dtype,' are taken to be: ',num2str(bgMin),',',num2str(bgMax)])
+% rowcol explicit indicies for oct2py compatibility
+data = zeros([rowcol(1),rowcol(2),nFrame],dtype); %initialize all frame
+
+  disp(['max,min pixel intensities for ',dtype,' are taken to be: ',num2str(bgMin),',',num2str(bgMax)])
 
 bgmm = [bgMin,bgMax];
+
 end %function
