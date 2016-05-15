@@ -92,24 +92,11 @@ if isempty(U.swirl)
     swirlParam.radius=40; swirlParam.strength=0.035;
 end
 
-if ~isoctave
-    if verLessThan('matlab','8.1'), %R2013a
-        oldWay = true; %uses slower transformation algorithms
-    else
-        oldWay = false;
-    end
-else % octave
-   page_output_immediately(1)
-   page_screen_output(0)
-   pkg load image
-   oldWay = true; % octave 4.0.0 didn't have imwarp
-end
-
 %% create surface texture
 [bg,data] = phantomTexture(U);
 
 %% do translation
-data = translateTexture(bg,data,oldWay,swirlParam,U);
+data = translateTexture(bg,data,swirlParam,U);
 
 if nargout>0, varargout{1} = data; end %don't send out huge data if not requested
 
