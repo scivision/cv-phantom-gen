@@ -2,7 +2,7 @@ from oct2py import Oct2Py
 
 def genphantom(rc,nFrame,step,dxy, texture,motion,bits,fwidth,gausssigma):
     oc = Oct2Py(oned_as='column',convert_to_float=False,timeout=5)
-
+    oc.addpath('..')
 #%% build user parameter dict
     U = {'bitdepth':bits,
          'rowcol':rc,
