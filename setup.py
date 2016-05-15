@@ -11,12 +11,12 @@ with open('README.rst','r') as f:
 	long_description = f.read()
 
 #%% install
-setup(name='cv-phantom-gen',
+setup(name='cvphantom',
       version='0.1',
 	  description='Generate basic phantoms for computer vision work',
 	  long_description=long_description,
 	  author='Michael Hirsch',
       install_requires=['oct2py'],
 	  url='https://github.com/scienceopen/cv-phantom-gen',
-        packages=['cv-phantom-gen']
+        packages=['cvphantom']
 	  )
