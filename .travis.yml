@@ -1,29 +1,37 @@
-language: python
-
-python:
-    - 3.5
-
-sudo: true
-dist: trusty
-
 notifications:
   email: false
 
 git:
-  depth: 1
+  depth: 3
+  
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode7.3
+      env: 
+        - osv=MacOSX
+      compiler: gcc
+      before_install:
+        - brew update && brew upgrade
+        - brew install octave
+        
+    - os: linux
+      sudo: required
+      dist: trusty
+      env: 
+        - osv=Linux
+      before_install:
+        - sudo add-apt-repository ppa:octave/stable -y
+        - sudo apt-get update -qq
+        - sudo apt-get install -qq octave octave-image
 
-before_install:
-    - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-    - chmod +x miniconda.sh
-    - bash miniconda.sh -b -p $HOME/miniconda
-    - export PATH=$HOME/miniconda/bin:$PATH
-    - conda update --quiet --yes conda
-    - sudo add-apt-repository ppa:octave/stable -y
-    - sudo apt-get update -qq
-    - sudo apt-get install -qq octave octave-image
 
 install:
-    - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
+    - wget http://repo.continuum.io/miniconda/Miniconda-latest-$osv-x86_64.sh -O miniconda.sh
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - export PATH=$HOME/miniconda/bin:$PATH
+    - conda update --yes --quiet conda
+    - conda create --yes -n test python=$pyv
     - source activate test
     - pip -q install coveralls
     - python setup.py develop
