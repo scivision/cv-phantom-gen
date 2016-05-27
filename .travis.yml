@@ -4,6 +4,10 @@ notifications:
 git:
   depth: 3
   
+env: 
+  global:
+    - pyv=3.5
+  
 matrix:
   include:
     - os: osx
@@ -13,6 +17,8 @@ matrix:
       compiler: gcc
       before_install:
         - brew update && brew upgrade
+        #https://github.com/Homebrew/homebrew-science/issues/1715
+        - brew tap --repair && brew tap homebrew/science 
         - brew install octave
         
     - os: linux
