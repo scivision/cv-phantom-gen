@@ -10,16 +10,16 @@ env:
   
 matrix:
   include:
-    - os: osx
-      osx_image: xcode7.3
-      env: 
-        - osv=MacOSX
-      compiler: gcc
-      before_install:
-        - brew update && brew upgrade
-        #https://github.com/Homebrew/homebrew-science/issues/1715
-        - brew tap --repair && brew tap homebrew/science 
-        - brew install octave
+#    - os: osx
+#      osx_image: xcode7.3
+#      env: 
+#        - osv=MacOSX
+#      compiler: gcc
+#      before_install:
+#        - brew update && brew upgrade
+#       #https://github.com/Homebrew/homebrew-science/issues/1715#
+#        - brew tap --repair && brew tap homebrew/science 
+#        - brew install octave
         
     - os: linux
       sudo: required
