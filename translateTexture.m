@@ -1,4 +1,11 @@
 function data = translateTexture(bg,data,swirlParam,U)
+if ~isfield(U,'playvideo')
+    U.playvideo=[];
+end
+if ~isfield(U,'motion')
+    U.motion=[];
+end
+
 %% need this for when this function is called by itself using Oct2Py
 % if missing package, try from Octave prompt:  pkg install -verbose -forge image
 
@@ -15,8 +22,9 @@ try
     swx0 = swirlParam.x0; swy0 = swirlParam.y0;
     swstr = swirlParam.strength; swrad = swirlParam.radius;
 end
+
 %% init figure
-%% init figure
+
 if U.playvideo
     %h.f = figure('pos',[250 250 560 600]);
     h.f = figure(1); clf

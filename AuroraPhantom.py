@@ -3,7 +3,7 @@
 Auroral Phantom Generator
 
 # stationary vertical bar
-./AuroraPhantom.py -t vertbar -m none -n 1
+./AuroraPhantom.py -t vertbar -n 1
 """
 from matplotlib.pyplot import show
 #
@@ -35,7 +35,6 @@ if __name__ == '__main__':
          'gaussiansigma':p.gausssigma,
          'texture':  p.texture,
          'motion':   p.motion,
-         'playvideo':False, #False is to the Matlab code
          'fmt': p.format,
     }
 #%% computing
