@@ -11,7 +11,7 @@ env:
 matrix:
   include:
 #    - os: osx
-#      osx_image: xcode7.3
+#      osx_image: xcode8.2
 #      env: 
 #        - osv=MacOSX
 #      compiler: gcc
@@ -28,22 +28,30 @@ matrix:
         - osv=Linux
       before_install:
         - sudo add-apt-repository ppa:octave/stable -y
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq octave octave-image
+        - sudo apt update -qq
+        - sudo apt install -qq octave octave-image
 
 
 install:
-    - wget http://repo.continuum.io/miniconda/Miniconda-latest-$osv-x86_64.sh -O miniconda.sh
+    - if [[ $TRAVIS_OS_NAME == osx ]]; then
+        wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh;
+      else 
+        wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+      fi
+      
     - bash miniconda.sh -b -p $HOME/miniconda
     - export PATH=$HOME/miniconda/bin:$PATH
-    - conda update --yes --quiet conda
-    - conda create --yes -n test python=$pyv
+    - hash -r
+    
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    - conda create -n test python=$pyv
     - source activate test
     - pip -q install coveralls
     - python setup.py develop
 
 script:
-    - coverage run test/test.py
+    - coverage run test/test.py -v
 
 after_success:
     - coveralls

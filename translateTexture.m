@@ -1,7 +1,11 @@
 function data = translateTexture(bg,data,swirlParam,U)
 %% need this for when this function is called by itself using Oct2Py
-if isoctave
-    pkg load image
+% if missing package, try from Octave prompt:  pkg install -verbose -forge image
+
+try
+  fspecial('average',1);
+catch
+  pkg load image
 end
 
 nRow = U.rowcol(1); nCol = U.rowcol(2); nFrame = size(data,3);
@@ -24,7 +28,7 @@ if U.playvideo
     set(h.ax,'ydir','normal')
     axis(h.ax,'on')
     h.t = title('');
-else 
+else
     h.img = [];
 end
 
@@ -46,6 +50,11 @@ end
 
 %if isempty(mtranslate), data=[]; return, end
 switch lower(U.motion)
+    case {'none',[]} % no motion
+        for i = I
+            data(:,:,i) = bg;
+            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
+        end
     case 'swirlstill' %currently, swirl starts off weak, and increases in strength
         swirlParam.x0(1:length(swirlParam.x0)) = U.fwidth; %FIXME
         display('The Swirl algorithm is alpha-testing--needs manual positioning help--try vertbar texture')
@@ -73,12 +82,6 @@ switch lower(U.motion)
             %step 2: shear
             data(:,:,i) = doShearRight(dataFrame,RA,i,nFrame,U.dxy(1),U.rowcol,fillValue);
 
-            doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
-        end
-
-    case 'still'
-        for i = I
-            data(:,:,i) = bg;
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
     case 'rotate360ccw'
@@ -123,7 +126,7 @@ switch lower(U.motion)
         for i=I
           % imtranslate ~50% faster than doTform way
           if ~isempty(RA)
-            data(:,:,i) = imtranslate(bg,[-nFrame+i*U.dxy(1), 0]); 
+            data(:,:,i) = imtranslate(bg,[-nFrame+i*U.dxy(1), 0]);
           else %octave 4.0 with image 2.4.0 revised in 2013 still has messed-up imtranslate that wraps
             %data(:,:,i) = imtranslate(bg,-nFrame+i*U.dxy(1), 0,'wrap');  %NO
             T =   [1,0,0
@@ -131,7 +134,7 @@ switch lower(U.motion)
                   -nFrame+i*U.dxy(1), 0, 1];
             data(:,:,i)= doTform(T,RA,bg,U.rowcol,fillValue);
           end
-          doVid(writeObj,data(:,:,i),U,h,i,fPrefix) 
+          doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end %for i
 
         doWriteVid(writeObj,data,U)
@@ -147,7 +150,7 @@ switch lower(U.motion)
             doVid(writeObj,data(:,:,i),U,h,i,fPrefix)
         end
 
-    otherwise 
+    otherwise
         try close(writeObj), end
         error(['Unknown motion method ',U.translate,' specified'])
 end %switch
@@ -217,10 +220,10 @@ try
 
         writeObj.FrameRate = 10;
         open(writeObj)
-    else 
+    else
         writeObj = [];
     end
-catch 
+catch
     error('Writing movie files directly must be done in Matlab R2012a or newer')
 end
 
@@ -241,7 +244,7 @@ if ~isempty(writeObj) && ~isempty(U.movietype)
     [nRow,nCol,nFrame] = size(data);
 
     writeVideo(writeObj,reshape(data,nRow,nCol,1,nFrame))
-end 
+end
 
 end %function
 

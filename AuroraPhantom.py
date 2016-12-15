@@ -1,9 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Auroral Phantom Generator
+
+# stationary vertical bar
+./AuroraPhantom.py -t vertbar -m none -n 1
 """
 from matplotlib.pyplot import show
-from cvphantom.genphantom import genphantom
+#
+from cvphantom import genphantom
 from cvphantom.plots import playwrite
 
 if __name__ == '__main__':
@@ -17,13 +21,26 @@ if __name__ == '__main__':
     p.add_argument('-w','--width',help='feature width',type=float,default=30)
     p.add_argument('-n','--nframe',help='number of frames (time steps) to create',type=int,default=10)
     p.add_argument('--gausssigma',help='Gaussian std dev (only for gaussian phantoms)',type=float,default=35)
-    p.add_argument('--step',help='jump size in sim',type=int,default=1)
-    p.add_argument('--dxy',help='dx dx spatial step size',type=float,nargs=2,default=(1,1))
+    p.add_argument('-s','--step',help='jump size in sim',type=int,default=1)
+    p.add_argument('-d','--dxy',help='dx dx spatial step size',type=float,nargs=2,default=(1,1))
     p = p.parse_args()
+
+    #%% build user parameter dict
+    U = {'bitdepth': p.bits,
+         'rowcol':   p.rc,
+         'dxy':      p.dxy,
+         'nframe':   p.nframe,
+         'fwidth':   p.width,
+         'fstep':    p.step,
+         'gaussiansigma':p.gausssigma,
+         'texture':  p.texture,
+         'motion':   p.motion,
+         'playvideo':False, #False is to the Matlab code
+         'fmt': p.format,
+    }
 #%% computing
-    imgs = genphantom(p.rc, p.nframe, p.step,p.dxy, p.texture,p.motion,p.bits,
-                      p.width,p.gausssigma)
+    imgs = genphantom(U)
 #%% plotting / saving
-    playwrite(imgs,p.format,p.texture,p.motion,p.nframe)
+    playwrite(imgs,U)
 
     show()
