@@ -8,6 +8,10 @@ cv-phantom-gen
 ==============
 
 Computer Vision phantom generation, particularly useful for simulated images of the aurora borealis. Usable from Python, Octave, or Matlab.
+This was originally an Octave/Matlab program, but it's now simply ``.m`` code called by Oct2Py from Python.
+
+
+.. contents::
 
 Prereq
 ======
