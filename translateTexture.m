@@ -1,7 +1,19 @@
 function data = translateTexture(bg,data,swirlParam,U)
+% function data = translateTexture(bg,data,swirlParam,U)
+%
+% to make multiple simulataneous phantoms, call this function repeatedly and sum the result
+%
+
 if ~isfield(U,'motion')
     U.motion=[];
 end
+if ~isfield(U,'nframe') || isempty(U.nframe)
+    U.nframe=1;
+end
+if ~isfield(U,'fstep') || isempty(U.fstep)
+    U.fstep=1;
+end
+
 
 %% need this for when this function is called by itself using Oct2Py
 % if missing package, try from Octave prompt:  pkg install -verbose -forge image
@@ -157,14 +169,3 @@ function dataFrame = doShearRight(bg,RA,i,nFrame,dx,rowcol,fillValue)
 
              dataFrame = doTform(T,RA,bg,rowcol,fillValue);
 end %function
-
-function doWriteVid(writeObj,data,U)
-% this function is for those methods using parfor
-if ~isempty(writeObj) && ~isempty(U.movietype)
-    [nRow,nCol,nFrame] = size(data);
-
-    writeVideo(writeObj,reshape(data,nRow,nCol,1,nFrame))
-end
-
-end %function
-

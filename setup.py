@@ -10,6 +10,5 @@ except Exception as e:
 #%% install
 setup(name='cvphantom',
 	  description='Generate basic phantoms for computer vision work',
-      install_requires=['oct2py'],
-      packages=['cvphantom']
+      packages=['cvphantom'],
 	  )
