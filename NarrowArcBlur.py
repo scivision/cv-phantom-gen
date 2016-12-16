@@ -2,25 +2,30 @@
 """
 Closely-spaced arc simulator
 """
+from scipy.ndimage import shift
 from matplotlib.pyplot import show
 #
-from cvphantom import genphantom
+from cvphantom import phantomTexture,translateTexture
 from cvphantom.plots import playwrite
 #%% build user parameter dict
-U = {'bitdepth': 16,
+U = {'dtype':    'uint16',
      'rowcol':   (512,512),
      'dxy':      (1,1),
-     'nframe':   100,
+     'xy':       (0,0), # displacement
+     'nframe':   1,
      'fwidth':   5,
      'fstep':    1,
-     'gaussiansigma':10,
-     'texture':  'spokes',#'horizbar',
+     'gausssigma':10,
+     'texture':  'vertsine',
      'motion':   'horizslide',
      'fmt': None,
 }
 #%% computing
-imgs = genphantom(U)
+bg = phantomTexture(U)
+bg = bg + shift(bg,[0,15]) # this line can wrap values if you overlap
+
+data = translateTexture(bg,U)
 #%% plotting / saving
-playwrite(imgs,U)
+playwrite(data,U)
 
 show()

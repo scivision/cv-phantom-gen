@@ -1,21 +1,15 @@
-from numpy import ndarray,ones,zeros,linspace,radians,sin,arange,iinfo,tile,clip
+from numpy import ones,zeros,linspace,radians,sin,arange,iinfo,tile,clip
 from numpy.random import rand
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage.filters import gaussian_filter,gaussian_laplace
 from scipy.ndimage.interpolation import rotate,affine_transform
 from scipy.ndimage import shift
-
-def genphantom(U:dict) -> ndarray:
-    bg,data = phantomTexture(U)
-
-    data = translateTexture(bg,data,U)
-
-    return data
 
 def phantomTexture(U:dict):
     nrow,ncol = U['rowcol']
     fwidth = U['fwidth']
+    dtype = U['dtype']
 
-    bgmax,data,dtype = OFgenParamInit(U)
+    bgmax = valmax(U['dtype'])
     bstep = round(bgmax/(nrow/2))
     rmax = bgmax
 
@@ -26,24 +20,25 @@ def phantomTexture(U:dict):
     elif texture == 'uniformrandom':
         bg = (bgmax * rand(U['rowcol'])).astype(dtype)
     elif texture == 'gaussian':
-        bg = zeros(U['rowcol'])
+        bg = zeros(U['rowcol'],float)
         bg[nrow//2,ncol//2] = 1.
         bg = gaussian_filter(bg,U['gausssigma'])
-        bg = bgmax * bg / bg.max().astype(float) # normalize to full bit range
+        bg = bgmax * bg / bg.max()# normalize to full bit range
         bg = bg.astype(dtype)
+        assert bg[nrow//2,ncol//2] == bgmax,'did you wrap value?'
     elif texture == 'vertsine':
-        bgr = zeros((1,ncol),float) #yes, double to avoid quantization
+        bgr = zeros(ncol,float) #yes, double to avoid quantization
         bg = zeros(U['rowcol'],dtype)
-        bgr[fwidth-fwidth//2:fwidth+fwidth//2-1] = sin(radians(linspace(0,180,fwidth))) #don't do int8 yet or you'll quantize it to zero!
+        bgr[ncol//2-fwidth//2:ncol//2+fwidth//2+1] = sin(radians(linspace(0,180,fwidth))) #don't do int8 yet or you'll quantize it to zero!
         rowind = range(nrow//4,nrow*3//4)
-        #bg = double(bgMaxVal) .* repmat(bg,nRow,1);
-        bg[rowind,:] = bgmax * tile(bgr,len(rowind),1)
-        bg = bg.astype(dtype)
-#    elif texture == 'laplacian':
-#        bg = abs(fspecial('log',U.rowcol,50)); %double
-#        bg = (bgmm[1] * bg/bg.max()).astype(dtype) %normalize to full bit range
-#    elif texture == 'checkerboard':
-#        bg = (checkerboard(nrow//8) * bgmm[1]).astype(dtype)
+        bg[rowind,:] = bgmax * bgr
+        bg = bg.astype(dtype) # needs to be its own line
+    elif texture == 'laplacian':
+        bg = zeros(U['rowcol'],float)
+        bg[nrow//2,ncol//2] = 1.
+        bg = -gaussian_laplace(bg,U['gausssigma'])
+        bg -= bg.min()
+        bg = bgmax * bg / bg.max() # normalize to full bit range
     elif texture == 'xtriangle':
         bg = zeros(ncol,dtype)
         bg[:ncol//2] = arange(0,rmax, bstep, dtype)
@@ -80,34 +75,23 @@ def phantomTexture(U:dict):
     else:
         raise TypeError('unspecified texture {} selected'.format(U['texture']))
 
-    return bg,data
-
-def OFgenParamInit(U):
-    if U['bitdepth'] in (8,16):
-        dtype = 'uint{}'.format(U['bitdepth'])
-    elif U['bitdepth'] == 32:
-        dtype = 'single';
-    elif U['bitdepth'] == 64:
-        dtype = 'double';
-    else:
-        raise ValueError('unknown bit depth {}'.format(U['bitdepth']))
-
-    bgmax = valmax(dtype)
-#%% rowcol explicit indicies for oct2py compatibility
-    data = zeros((U['nframe'],U['rowcol'][0],U['rowcol'][1]),dtype) #initialize all frame
-
-    print('max pixel intensities for {} are taken to be: {}'.format(dtype,bgmax))
-
-    return bgmax,data,dtype
+    return bg
 
 def valmax(dtype):
     try:
-        return iinfo(dtype).max
+        bgmax = iinfo(dtype).max
     except ValueError:
-        return 1. #normalize
+        if dtype is float:
+            bgmax = 1. #normalize
+        else:
+            raise ValueError('unknown dtype {}'.format(dtype))
+
+    print('max pixel intensities for {} are taken to be: {}'.format(dtype,bgmax))
+
+    return bgmax
 
 
-def translateTexture(bg,data,U):
+def translateTexture(bg,U:dict):
 # function data = translateTexture(bg,data,swirlParam,U)
 # to make multiple simultaneous phantoms, call this function repeatedly and sum the result
 
@@ -119,7 +103,8 @@ def translateTexture(bg,data,U):
         U['fstep']=1
 
     nrow,ncol = U['rowcol']
-    nframe = data.shape[0]
+    nframe = U['nframe']
+    data = zeros((nframe,nrow,ncol), bg.dtype) #initialize all frame
 
 #    try:
 #        swx0 = swirlParam.x0; swy0 = swirlParam.y0;
