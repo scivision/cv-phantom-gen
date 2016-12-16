@@ -14,7 +14,7 @@ U = {'bitdepth': 16,
      'fwidth':   5,
      'fstep':    1,
      'gaussiansigma':10,
-     'texture':  'pyramid45',#'horizbar',
+     'texture':  'spokes',#'horizbar',
      'motion':   'horizslide',
      'fmt': None,
 }

@@ -1,4 +1,4 @@
-from numpy import ndarray,ones,zeros,linspace,radians,sin,fliplr,arange,flipud,iinfo
+from numpy import ndarray,ones,zeros,linspace,radians,sin,arange,iinfo,tile,clip
 from numpy.random import rand
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import rotate,affine_transform
@@ -17,7 +17,7 @@ def phantomTexture(U:dict):
 
     bgmax,data,dtype = OFgenParamInit(U)
     bstep = round(bgmax/(nrow/2))
-    rmax = bgmax+bstep-1
+    rmax = bgmax
 
     texture = U['texture'].lower()
 
@@ -37,7 +37,7 @@ def phantomTexture(U:dict):
         bgr[fwidth-fwidth//2:fwidth+fwidth//2-1] = sin(radians(linspace(0,180,fwidth))) #don't do int8 yet or you'll quantize it to zero!
         rowind = range(nrow//4,nrow*3//4)
         #bg = double(bgMaxVal) .* repmat(bg,nRow,1);
-        bg[rowind,:] = bgmax * repmat(bgr,len(rowind),1)
+        bg[rowind,:] = bgmax * tile(bgr,len(rowind),1)
         bg = bg.astype(dtype)
 #    elif texture == 'laplacian':
 #        bg = abs(fspecial('log',U.rowcol,50)); %double
@@ -45,13 +45,15 @@ def phantomTexture(U:dict):
 #    elif texture == 'checkerboard':
 #        bg = (checkerboard(nrow//8) * bgmm[1]).astype(dtype)
     elif texture == 'xtriangle':
-        bg[0,:ncol//2] = arange(0,rmax, bstep, dtype)
-        bg[0,ncol//2:] = fliplr(bg)
-        bg = repmat(bg,[nrow,1]);
+        bg = zeros(ncol,dtype)
+        bg[:ncol//2] = arange(0,rmax, bstep, dtype)
+        bg[ncol//2:] = bg[:ncol//2][::-1]
+        bg = tile(bg[None,:],[nrow,1]);
     elif texture == 'ytriangle':
-        bg[:nrow//2,0] = arange(0,rmax, bstep, dtype)
-        bg[nrow//2:,0] = flipud(bg)
-        bg = repmat(bg,[1,ncol])
+        bg = zeros(nrow,dtype)
+        bg[:nrow//2] = arange(0,rmax, bstep, dtype)
+        bg[nrow//2:] = bg[:nrow//2][::-1]
+        bg = tile(bg[:,None],[1,ncol])
     elif texture in ('pyramid','pyramid45'):
         bg = zeros(U['rowcol'],dtype)
         temp = arange(0, rmax, bstep, dtype)
@@ -64,10 +66,10 @@ def phantomTexture(U:dict):
         if U['texture']=='pyramid45':
             bg = rotate(bg,45,reshape=False)
     elif texture == 'spokes': #3 pixels wide
-        bg = zeros(U['rowcol'],dtype)
+        bg = zeros(U['rowcol']) # float to avoid overflow
         bg[nrow//2-fwidth//2:nrow//2 + fwidth//2, :ncol] = bgmax   #horizontal line
         bg[:nrow, ncol//2 - fwidth//2:ncol//2 + fwidth//2] = bgmax #vertical line
-        bg = bg + rotate(bg,45,reshape=False) #diagonal line
+        bg = clip(bg + rotate(bg,45,reshape=False),0,bgmax).astype(dtype) #diagonal line
     elif texture== 'vertbar': #vertical bar, starts center of image
         bg = zeros(U['rowcol'],dtype)
 
@@ -171,20 +173,14 @@ def translateTexture(bg,data,U):
             data[i,...] = doShearRight(bg,i,U)
     elif motion == 'diagslide':
         for i in I:
-            data[i,...] = shift(bg,
-                                [-nframe+i*U.dxy[1], -nframe+i*U.dxy[0]],
-                                mode='wrap')
+            data[i,...] = shift(bg, [-nframe+i*U.dxy[1], -nframe+i*U.dxy[0]])
     elif motion == 'horizslide':
         print('Horizontally moving feature, dim: {}'.format(data.shape))
         for i in I:
-            data[i,...]= shift(bg,
-                               [0,-nframe+i*U['dxy'][0]],
-                               mode='wrap')
+            data[i,...] = shift(bg, [0,-nframe+i*U['dxy'][0]])
     elif motion == 'vertslide':
         for i in I:
-            data[i,...] = shift(bg,
-                                [-nframe+i*U['dxy'][1],0],
-                                mode='wrap')
+            data[i,...] = shift(bg, [-nframe+i*U['dxy'][1],0])
     else:
         ValueError('Unknown motion method {}'.format(U['translate']))
 
@@ -197,4 +193,4 @@ def doShearRight(bg,i,U):
          [(nframe-i*U['dxy'][0])/nframe,1,0],
          [0,0,1]]
 
-    return affine_transform(bg,T,mode='wrap')
+    return affine_transform(bg,T)
