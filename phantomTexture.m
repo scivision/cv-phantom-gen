@@ -1,20 +1,21 @@
 function [bg,data] = phantomTexture(U)
 bitdepth=U.bitdepth;
 nrow = U.rowcol(1); ncol= U.rowcol(2); nframe=U.nframe;
-fwidth = U.fwidth; 
+fwidth = U.fwidth;
 
 [bgmm,data,dtype] = OFgenParamInit(bitdepth,U.rowcol,nframe);
 
 %% need this for when this function is called by itself using Oct2Py/Octave
+% if missing package, try from Octave prompt:  pkg install -verbose -forge image
 try
- fspecial('average',1); 
+  fspecial('average',1);
 catch
- pkg load image
+  pkg load image
 end
 
 %% main program
 switch lower(U.texture)
-    case 'wall'           
+    case 'wall'
         bg = bgmm(2) .* ones(U.rowcol,dtype);
     case 'uniformrandom'
         bg = bgmm(1) + (bgmm(2)-bgmm(1)) .* cast(rand(U.rowcol),dtype);
@@ -37,11 +38,11 @@ switch lower(U.texture)
         bg = cast(checkerboard(nrow/8).*double(bgmm(2)),dtype);
     case 'xtriangle'
         bg(1,1:ncol/2) = cast(bgmm(1):round((bgmm(2)-bgmm(1))/(nrow/2)):bgmm(2),dtype);
-        bg(1,ncol/2+1:ncol) = fliplr(bg);   
+        bg(1,ncol/2+1:ncol) = fliplr(bg);
         bg = repmat(bg,[nrow,1]);
     case 'ytriangle'
         bg(1:nrow/2,1) = cast(bgmm(1):round((bgmm(2)-bgmm(1))/(nrow/2)):bgmm(2),dtype);
-        bg(nrow/2+1:nrow,1) = flipud(bg);   
+        bg(nrow/2+1:nrow,1) = flipud(bg);
         bg = repmat(bg,[1,ncol]);
     case {'pyramid','pyramid45'}
         bg = zeros(nrow,ncol,dtype);
@@ -53,7 +54,7 @@ switch lower(U.texture)
            bg(i:end-i+1,end-i+1) = temp(i); %east face
         end
         if strcmpi(U.texture,'pyramid45')
-            bg = imrotate(bg,45,'bilinear','crop'); 
+            bg = imrotate(bg,45,'bilinear','crop');
         end
     case 'spokes' %3 pixels wide
         bg = zeros(U.rowcol,dtype);

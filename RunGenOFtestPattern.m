@@ -25,7 +25,6 @@ function varargout = RunGenOFtestPattern(varargin)
 % RunGenOFtestPattern(1,[],'ShearRight','pyramid45',256,512,512,.5,.5,1,16,5,1)
 %
 % inputs:
-% playVideo: show preview while writing (slower)
 % movieType: [], don't write movie
 %            'pgm', series of PGM images (no compression) <-- needed for Black C code
 %            'png', series of PNG images
@@ -73,8 +72,6 @@ function varargout = RunGenOFtestPattern(varargin)
 
 p = inputParser;
 addParamValue(p,'texture','vertsine') %#ok<*NVREPL> % need this for Octave 4.0 which doesn't have addParameter
-addParamValue(p,'playvideo',true)
-addParamValue(p,'movietype',[])
 addParamValue(p,'motion','vertslide')
 addParamValue(p,'rowcol',[512,512])
 addParamValue(p,'nframe',50), addParamValue(p,'fstep',1)
