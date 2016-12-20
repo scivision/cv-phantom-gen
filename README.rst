@@ -1,3 +1,5 @@
+.. image:: https://zenodo.org/badge/31153745.svg
+    :target: https://zenodo.org/badge/latestdoi/31153745
 .. image:: https://travis-ci.org/scienceopen/cv-phantom-gen.svg?branch=master
     :target: https://travis-ci.org/scienceopen/cv-phantom-gen
 .. image:: https://coveralls.io/repos/github/scienceopen/cv-phantom-gen/badge.svg?branch=master
