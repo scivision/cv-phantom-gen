@@ -12,8 +12,6 @@ matrix:
   include:
 #    - os: osx
 #      osx_image: xcode8.2
-#      env: 
-#        - osv=MacOSX
 #      compiler: gcc
 #      before_install:
 #        - brew update && brew upgrade
@@ -22,14 +20,8 @@ matrix:
 #        - brew install octave
         
     - os: linux
-      sudo: required
-      dist: trusty
-      env: 
-        - osv=Linux
-      before_install:
-        - sudo add-apt-repository ppa:octave/stable -y
-        - sudo apt update -qq
-        - sudo apt install -qq octave octave-image
+
+
 
 
 install:
