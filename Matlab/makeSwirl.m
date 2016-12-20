@@ -2,7 +2,7 @@ function [Iswirl,u,v] = makeSwirl(I,x0,y0,strength,radius,showPlot,fillValue,Bit
 % function makeSwirl(I,x0,y0,strength,radius,showPlot,fillValue,BitDepth)
 %
 % inputs:
-% I: image data (default is checkerboard 512x512 pixels)
+% I: image data
 % x0: x-pixel of swirl center
 % y0: y-pixel of swirl center
 % strength: factor indicating how strong twisting is

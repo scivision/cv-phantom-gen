@@ -13,7 +13,7 @@ def playwrite(imgs,U):
     figure(1).clf()
     fg = figure(1)
     ax=fg.gca()
-    hi = ax.imshow(imgs[0,...], origin='bottom')
+    hi = ax.imshow(imgs[0,...], origin='bottom', interpolation="none")
     fg.colorbar(hi,ax=ax)
 
     if U['fmt'] == 'avi' and videoWriter is not None: #output video requested

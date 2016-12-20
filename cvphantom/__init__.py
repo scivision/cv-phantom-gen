@@ -3,11 +3,16 @@ from numpy.random import rand
 from scipy.ndimage.filters import gaussian_filter,gaussian_laplace
 from scipy.ndimage.interpolation import rotate,affine_transform
 from scipy.ndimage import shift
+from skimage.data import checkerboard
+from skimage.transform import swirl
 
 def phantomTexture(U:dict):
     nrow,ncol = U['rowcol']
     fwidth = U['fwidth']
-    dtype = U['dtype']
+    if 'dtype' in U and U['dtype'] is not None:
+        U['dtype'] = U['dtype']
+    else:
+        U['dtype'] = 'uint8'
 
     bgmax = valmax(U['dtype'])
     bstep = round(bgmax/(nrow/2))
@@ -16,23 +21,24 @@ def phantomTexture(U:dict):
     texture = U['texture'].lower()
 
     if texture == 'wall':
-        bg = bgmax * ones(U['rowcol'],dtype)
+        bg = bgmax * ones(U['rowcol'], U['dtype'])
     elif texture == 'uniformrandom':
-        bg = (bgmax * rand(U['rowcol'])).astype(dtype)
+        bg = (bgmax * rand(U['rowcol'])).astype(U['dtype'])
     elif texture == 'gaussian':
         bg = zeros(U['rowcol'],float)
         bg[nrow//2,ncol//2] = 1.
         bg = gaussian_filter(bg,U['gausssigma'])
         bg = bgmax * bg / bg.max()# normalize to full bit range
-        bg = bg.astype(dtype)
+        bg = bg.astype(U['dtype'])
         assert bg[nrow//2,ncol//2] == bgmax,'did you wrap value?'
     elif texture == 'vertsine':
         bgr = zeros(ncol,float) #yes, double to avoid quantization
-        bg = zeros(U['rowcol'],dtype)
-        bgr[ncol//2-fwidth//2:ncol//2+fwidth//2+1] = sin(radians(linspace(0,180,fwidth))) #don't do int8 yet or you'll quantize it to zero!
+        bg = zeros(U['rowcol'], U['dtype'])
+        s = slice(ncol//2-fwidth//2,ncol//2+fwidth//2+1)
+        bgr[s] = sin(radians(linspace(0,180,len(bgr[s])))) #don't do int8 yet or you'll quantize it to zero!
         rowind = range(nrow//4,nrow*3//4)
         bg[rowind,:] = bgmax * bgr
-        bg = bg.astype(dtype) # needs to be its own line
+        bg = bg.astype(U['dtype']) # needs to be its own line
     elif texture == 'laplacian':
         bg = zeros(U['rowcol'],float)
         bg[nrow//2,ncol//2] = 1.
@@ -40,18 +46,18 @@ def phantomTexture(U:dict):
         bg -= bg.min()
         bg = bgmax * bg / bg.max() # normalize to full bit range
     elif texture == 'xtriangle':
-        bg = zeros(ncol,dtype)
-        bg[:ncol//2] = arange(0,rmax, bstep, dtype)
+        bg = zeros(ncol, U['dtype'])
+        bg[:ncol//2] = arange(0,rmax, bstep, U['dtype'])
         bg[ncol//2:] = bg[:ncol//2][::-1]
         bg = tile(bg[None,:],[nrow,1]);
     elif texture == 'ytriangle':
-        bg = zeros(nrow,dtype)
-        bg[:nrow//2] = arange(0,rmax, bstep, dtype)
+        bg = zeros(nrow, U['dtype'])
+        bg[:nrow//2] = arange(0,rmax, bstep, U['dtype'])
         bg[nrow//2:] = bg[:nrow//2][::-1]
         bg = tile(bg[:,None],[1,ncol])
     elif texture in ('pyramid','pyramid45'):
-        bg = zeros(U['rowcol'],dtype)
-        temp = arange(0, rmax, bstep, dtype)
+        bg = zeros(U['rowcol'], U['dtype'])
+        temp = arange(0, rmax, bstep, U['dtype'])
         for i in range(1,nrow//2):
            bg[i,i:-i] = temp[i] #north face
            bg[i:-i,i] = temp[i] #west face
@@ -64,14 +70,16 @@ def phantomTexture(U:dict):
         bg = zeros(U['rowcol']) # float to avoid overflow
         bg[nrow//2-fwidth//2:nrow//2 + fwidth//2, :ncol] = bgmax   #horizontal line
         bg[:nrow, ncol//2 - fwidth//2:ncol//2 + fwidth//2] = bgmax #vertical line
-        bg = clip(bg + rotate(bg,45,reshape=False),0,bgmax).astype(dtype) #diagonal line
+        bg = clip(bg + rotate(bg,45,reshape=False),0,bgmax).astype(U['dtype']) #diagonal line
     elif texture== 'vertbar': #vertical bar, starts center of image
-        bg = zeros(U['rowcol'],dtype)
+        bg = zeros(U['rowcol'], U['dtype'])
 
         #bg(1:nRow,end-4:end) = bgMaxVal; %vertical line, top to bottom
 
         # vertical bar starts 1/4 from bottom and 1/4 from top of image
         bg[nrow*1//4:nrow*3//4, ncol//2 - fwidth//2:ncol//2 + fwidth//2] = bgmax
+    elif texture == 'checkerboard':
+        bg = checkerboard() # no input options, it's loading an image
     else:
         raise TypeError('unspecified texture {} selected'.format(U['texture']))
 
@@ -92,9 +100,9 @@ def valmax(dtype):
 
 
 def translateTexture(bg,U:dict):
-# function data = translateTexture(bg,data,swirlParam,U)
-# to make multiple simultaneous phantoms, call this function repeatedly and sum the result
-
+    """
+     to make multiple simultaneous phantoms, call this function repeatedly and sum the result
+    """
     if not 'motion' in U:
         U['motion']=None
     if not 'nframe' in U:
@@ -102,13 +110,10 @@ def translateTexture(bg,U:dict):
     if not 'fstep' in U or not U['fstep']:
         U['fstep']=1
 
-    nrow,ncol = U['rowcol']
+    nrow,ncol = bg.shape
     nframe = U['nframe']
     data = zeros((nframe,nrow,ncol), bg.dtype) #initialize all frame
 
-#    try:
-#        swx0 = swirlParam.x0; swy0 = swirlParam.y0;
-#        swstr = swirlParam.strength; swrad = swirlParam.radius;
 #%% indices for frame looping
     I = range(0,nframe,U['fstep'])
 
@@ -117,30 +122,17 @@ def translateTexture(bg,U:dict):
     else:
         motion = U['motion']
 
+#%% implement motion
     if motion in (None,'none'):
         for i in I:
             data[i,...] = bg
-#    elif motion == 'swirlstill': #currently, swirl starts off weak, and increases in strength
-#        swirlParam.x0(1:length(swirlParam.x0)) = U.fwidth; #FIXME
-#        print('The Swirl algorithm is alpha-testing--needs manual positioning help--try vertbar texture')
-#        for i in range(I):
-#           data[i,...] = makeSwirl(bg,...
-#                                 swx0,swy0,...
-#                                 swstr * (i-1), swrad,...
-#                                 false,fillValue,U.bitdepth);
-#    elif motion == 'shearrightswirl':
-#        print('swirl location not matching shear right now? shear going wrong way?')
-#        swx0(1:length(swy0)) = U.fwidth; %FIXME
-#        # swirl, then shear
-#        for i in range(I):
-#
-#            #Step 1: swirl
-#            dataFrame = makeSwirl(bg,...
-#                                 swx0,swy0,...
-#                                 swstr * (i-1), swrad,...
-#                                 false,fillValue,U.bitdepth);
-#            #step 2: shear
-#            data[i,...] = doShearRight(dataFrame,RA,i,nFrame,U.dxy(1),U.rowcol,fillValue);
+    elif motion == 'swirl':
+        for i in I:
+            strength = i/nframe*U['strength']
+            for x,y in zip(U['x0'], U['y0']): #for each swirl center...
+                data[i,...] = swirl(bg, (x,y), strength,
+                                radius=U['radius'], rotation=0, clip=True, preserve_range=True)
+
     elif motion == 'rotate360ccw':
         for i in I:
             q = (nframe-i)/nframe*360 #degrees
@@ -172,6 +164,9 @@ def translateTexture(bg,U:dict):
     return data
 
 def doShearRight(bg,i,U):
+    """
+    see also http://scikit-image.org/docs/dev/api/skimage.transform.html#affinetransform
+    """
     nframe = U['nframe']
 
     T = [[1,0,0],
