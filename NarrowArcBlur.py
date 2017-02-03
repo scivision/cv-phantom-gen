@@ -12,17 +12,21 @@ U = {'dtype':    'uint16',
      'rowcol':   (512,512),
      'dxy':      (1,1),
      'xy':       (0,0), # displacement
-     'nframe':   1,
+     'nframe':   100,
      'fwidth':   5,
      'fstep':    1,
      'gausssigma':10,
      'texture':  'vertsine',
-     'motion':   'horizslide',
-     'fmt': None,
+     'motion':   'swirl',
+     'fmt':     None,
+     'x0':      [256], #swirl centers
+     'y0':      [256], #swirl centers
+     'strength': 10, #swirl
+     'radius' : 30, #swirl
 }
 #%% computing
 bg = phantomTexture(U)
-bg = bg + shift(bg,[0,15]) # this line can wrap values if you overlap
+#bg = bg + shift(bg,[0,15]) # this line can wrap values if you overlap
 
 data = translateTexture(bg,U)
 #%% plotting / saving

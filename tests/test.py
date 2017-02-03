@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-from cvphantom import genphantom
+from cvphantom import phantomTexture
 #from numpy.testing import assert_allclose
 
-U = {'bitdepth': 16,
+U = {'dtype': 'uint16',
      'rowcol':   (128,128),
      'dxy':      (1,1),
      'nframe':   1,
@@ -11,6 +11,7 @@ U = {'bitdepth': 16,
      'texture':  'vertsine',
 }
 
-imgs = genphantom(U)
+imgs = phantomTexture(U)
 
-assert imgs[31,6]==42125
+assert imgs.dtype == U['dtype']
+assert imgs[62,62]==53018
