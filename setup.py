@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 from setuptools import setup
-import subprocess
 
-try:
-    subprocess.call(['conda','install','--file','requirements.txt'])
-except Exception as e:
-    pass
+req = ['nose','numpy','scipy','scikit-image','pillow','matplotlib']
 
 #%% install
 setup(name='cvphantom',
+      packages=['cvphantom'],   
+      author='Michael Hirsch, Ph.D.',
 	  description='Generate basic phantoms for computer vision work',
-      packages=['cvphantom'],
+      install_requires=req,
 	  )

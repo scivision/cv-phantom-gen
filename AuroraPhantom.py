@@ -7,7 +7,7 @@ Auroral Phantom Generator
 """
 from matplotlib.pyplot import show
 #
-from cvphantom import genphantom
+from cvphantom import phantomTexture, translateTexture
 from cvphantom.plots import playwrite
 
 if __name__ == '__main__':
@@ -38,7 +38,9 @@ if __name__ == '__main__':
          'fmt': p.format,
     }
 #%% computing
-    imgs = genphantom(U)
+    bg = phantomTexture(U)
+    #bg = bg + shift(bg,[0,15]) # this line can wrap values if you overlap
+    imgs = translateTexture(bg,U)
 #%% plotting / saving
     playwrite(imgs,U)
 

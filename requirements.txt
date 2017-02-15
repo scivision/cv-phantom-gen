@@ -1,7 +1,0 @@
-setuptools
-nose
-numpy
-scipy
-scikit-image
-pillow
-matplotlib

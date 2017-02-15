@@ -17,7 +17,7 @@ Install
 =======
 ::
 
-    python setup.py develop
+    pip install .
 
 Usage
 =====
