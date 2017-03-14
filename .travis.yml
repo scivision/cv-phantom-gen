@@ -3,29 +3,12 @@ notifications:
 
 git:
   depth: 3
-  
-env: 
-  global:
-    - pyv=3.5
+
   
 matrix:
-  include:
-#    - os: osx
-#      osx_image: xcode8.2
-#      compiler: gcc
-#      before_install:
-#        - brew update && brew upgrade
-#       #https://github.com/Homebrew/homebrew-science/issues/1715#
-#        - brew tap --repair && brew tap homebrew/science 
-#        - brew install octave
-        
     - os: linux
-      sudo: required
-      dist: trusty
-      before_install:
-        - sudo add-apt-repository ppa:octave/stable -y
-        - sudo apt update -qq
-        - sudo apt install -qq octave octave-image
+      env: 
+        - pyv=3.6
 
 
 install:
