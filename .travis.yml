@@ -1,3 +1,5 @@
+language: generic
+
 notifications:
   email: false
 
@@ -7,17 +9,18 @@ git:
   
 matrix:
     - os: linux
-      env: 
-        - pyv=3.6
+      env: pyv=3.6
+
+before_install:
+  - if [[ $TRAVIS_OS_NAME == osx ]]; then
+      wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh;
+    else 
+      wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
 
 
 install:
-    - if [[ $TRAVIS_OS_NAME == osx ]]; then
-        wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh;
-      else 
-        wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-      fi
-      
+    
     - bash miniconda.sh -b -p $HOME/miniconda
     - export PATH=$HOME/miniconda/bin:$PATH
     - hash -r
@@ -27,6 +30,7 @@ install:
     - conda create -n test python=$pyv
     - source activate test
     - pip -q install coveralls
+    - conda install numpy scipy scikit-image matplotlib
     - python setup.py develop
 
 script:

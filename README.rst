@@ -1,9 +1,7 @@
 .. image:: https://zenodo.org/badge/31153745.svg
     :target: https://zenodo.org/badge/latestdoi/31153745
-.. image:: https://travis-ci.org/scienceopen/cv-phantom-gen.svg?branch=master
-    :target: https://travis-ci.org/scienceopen/cv-phantom-gen
-.. image:: https://coveralls.io/repos/github/scienceopen/cv-phantom-gen/badge.svg?branch=master
-    :target: https://coveralls.io/github/scienceopen/cv-phantom-gen?branch=master
+.. image:: https://travis-ci.org/scivision/cv-phantom-gen.svg?branch=master
+    :target: https://travis-ci.org/scivision/cv-phantom-gen
 
 ==============
 cv-phantom-gen
@@ -17,7 +15,7 @@ Install
 =======
 ::
 
-    pip install .
+    python setup.py develop
 
 Usage
 =====
