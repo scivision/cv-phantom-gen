@@ -8,6 +8,7 @@ git:
 
   
 matrix:
+  include:
     - os: linux
       env: pyv=3.6
 
