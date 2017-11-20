@@ -1,20 +1,16 @@
 #!/usr/bin/env python
-req = ['nose','numpy','scipy','scikit-image','pillow','matplotlib']
+req = ['nose','numpy','scipy','scikit-image','pillow']
 # %%
-import pip
-try:
-    import conda.cli
-    conda.cli.main('install',*req)
-except Exception as e:
-    pip.main(['install'] +req)
-
-# %%
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(name='cvphantom',
-      packages=['cvphantom'],   
+      packages=find_packages(),
+      version='0.5.0',   
       author='Michael Hirsch, Ph.D.',
 	  description='Generate basic phantoms for computer vision work',
+	  long_description=open('README.rst').read(),
       install_requires=req,
+      extras_require={'plot':['matplotlib','pyimagevideo']},
+      python_requires='>=3.6',
 	  )

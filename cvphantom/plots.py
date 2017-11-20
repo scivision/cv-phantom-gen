@@ -18,7 +18,7 @@ def playwrite(imgs,U):
 
     if U['fmt'] == 'avi' and videoWriter is not None: #output video requested
         ofn = f"{U['texture']}_{U['motion']}.avi"
-        print('writing {}'.format(ofn))
+        print('writing', ofn)
         hv = videoWriter(ofn,'FFV1',imgs.shape[:2][::-1],usecolor=False)
     elif U['fmt'] is not None:
         hv = U['fmt']
@@ -35,7 +35,7 @@ def playwrite(imgs,U):
             continue
         elif isinstance(hv,str):
             ofn = f"{U['texture']}_{U['motion']}_{i}.{hv}"
-            print(f'writing {ofn}')
+            print('writing',ofn)
             imsave(ofn, imgs[i,...])
         else:
             hv.write(bytescale(imgs[i,...],cmin=0,cmax=imgs.max()))
