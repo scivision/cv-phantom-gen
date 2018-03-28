@@ -1,11 +1,8 @@
 from scipy.misc import bytescale, imsave
 from matplotlib.pyplot import figure,draw, pause
 #
-try:
-    from pyimagevideo.writeavi_opencv import videoWriter
-except ImportError:
-    videoWriter=None
-
+import imageio # TODO use for video writing 
+VideoWriter=None
 
 def playwrite(imgs,U):
     assert imgs.ndim==3
@@ -16,10 +13,10 @@ def playwrite(imgs,U):
     hi = ax.imshow(imgs[0,...], origin='bottom', interpolation="none")
     fg.colorbar(hi,ax=ax)
 
-    if U['fmt'] == 'avi' and videoWriter is not None: #output video requested
+    if U['fmt'] == 'avi' and VideoWriter is not None: #output video requested
         ofn = f"{U['texture']}_{U['motion']}.avi"
         print('writing', ofn)
-        hv = videoWriter(ofn,'FFV1',imgs.shape[:2][::-1],usecolor=False)
+        hv = VideoWriter(ofn,'FFV1',imgs.shape[:2][::-1],usecolor=False)
     elif U['fmt'] is not None:
         hv = U['fmt']
     else:
@@ -40,7 +37,4 @@ def playwrite(imgs,U):
         else:
             hv.write(bytescale(imgs[i,...],cmin=0,cmax=imgs.max()))
 
-    try:
-        hv.release()
-    except AttributeError:
-        pass
+ 
