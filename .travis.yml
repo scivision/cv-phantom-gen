@@ -9,7 +9,7 @@ git:
 jobs:
   include:
   - stage: lint
-    install: pip install flake8 mypy
+    install: pip install -e .[lint]
     script:
     - flake8
     - mypy .
