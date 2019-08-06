@@ -5,28 +5,24 @@ Auroral Phantom Generator
 # stationary vertical bar
 ./AuroraPhantom.py -t vertbar -n 1
 """
-from matplotlib.pyplot import show
+import argparse
+import scipy.ndimage as nd
+import imageio
+from pathlib import Path
 
-#
-from cvphantom import phantomTexture, translateTexture
-from cvphantom.plots import playwrite
+import cvphantom
+import cvphantom.plots as cp
 
 if __name__ == "__main__":
-    from argparse import ArgumentParser
-
-    p = ArgumentParser(description="Auroral Phantom Generator")
+    p = argparse.ArgumentParser(description="Auroral Phantom Generator")
+    p.add_argument("savefn", help="filename to save simulted video", nargs="?")
+    p.add_argument("-two", help="two auroral arcs", action="store_true")
     p.add_argument(
         "--rc",
         help="number of rows, column pixels in image",
         nargs=2,
         type=int,
         default=(512, 512),
-    )
-    p.add_argument(
-        "-o",
-        "--format",
-        help="write format (avi, png, pnm) for the output",
-        default=None,
     )
     p.add_argument(
         "-t", "--texture", help="select texture (vertsize,...)", default="vertsine"
@@ -74,13 +70,17 @@ if __name__ == "__main__":
         "gaussiansigma": p.gausssigma,
         "texture": p.texture,
         "motion": p.motion,
-        "fmt": p.format,
     }
     # %% computing
-    bg = phantomTexture(U)
-    # bg = bg + shift(bg,[0,15]) # this line can wrap values if you overlap
-    imgs = translateTexture(bg, U)
-    # %% plotting / saving
-    playwrite(imgs, U)
+    bg = cvphantom.phantomTexture(U)
+    if p.two:
+        bg = bg + nd.shift(bg, [0, 15])  # this line can wrap values if you overlap
 
-    show()
+    imgs = cvphantom.translateTexture(bg, U)
+
+    if p.savefn:
+        savefn = Path(p.savefn).expanduser()
+        print("writing video to", savefn)
+        imageio.mimwrite(savefn, cvphantom.sixteen2eight(imgs))
+    else:
+        cp.play(imgs, U)
