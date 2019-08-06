@@ -4,8 +4,16 @@ dist: xenial
 
 git:
   depth: 25
+  quiet: true
 
-
-install: pip install -e .[tests]
-
-script: pytest -r a -v
+jobs:
+  include:
+  - stage: lint
+    install: pip install -e .[tests,cov]
+    script:
+    - flake8
+    - mypy .
+  - stage: test
+    name: Dev install
+    install: pip install -e .[tests]
+    script: pytest -r a -v

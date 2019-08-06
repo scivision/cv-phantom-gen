@@ -14,4 +14,4 @@ images of the aurora borealis.
 
 ## Usage
 
-    ./AuroraPhantom.py
+    python AuroraPhantom.py
