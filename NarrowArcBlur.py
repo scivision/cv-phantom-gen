@@ -2,18 +2,19 @@
 """
 Closely-spaced arc simulator
 """
+from __future__ import annotations
 import scipy.ndimage as nd
 import argparse
 import numpy as np
 from pathlib import Path
 import imageio
-import typing
+import typing as T
 
 import cvphantom
 import cvphantom.plots as cp
 
 
-def run(U: typing.Dict[str, typing.Any], two_arcs: bool = False) -> np.ndarray:
+def run(U: dict[str, T.Any], two_arcs: bool = False) -> np.ndarray:
     # %% computing
     bg = cvphantom.phantomTexture(U)
     if two_arcs:

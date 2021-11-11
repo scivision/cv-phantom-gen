@@ -1,11 +1,13 @@
-import typing
+from __future__ import annotations
+import typing as T
+
 import numpy as np
 import scipy.ndimage.interpolation as ndi
 import scipy.ndimage as nd
 import skimage.transform as skt
 
 
-def sixteen2eight(img: np.ndarray, Clim: typing.Tuple[int, int] = None) -> np.ndarray:
+def sixteen2eight(img: np.ndarray, Clim: tuple[int, int] = None) -> np.ndarray:
     """
     stretch uint16 data to uint8 data e.g. images
 
@@ -31,7 +33,7 @@ def sixteen2eight(img: np.ndarray, Clim: typing.Tuple[int, int] = None) -> np.nd
     return Q.astype(np.uint8)  # convert to uint8
 
 
-def normframe(img: np.ndarray, Clim: typing.Tuple[int, int] = None) -> np.ndarray:
+def normframe(img: np.ndarray, Clim: tuple[int, int] = None) -> np.ndarray:
     """
     Normalize array to [0, 1]
 
@@ -56,7 +58,7 @@ def normframe(img: np.ndarray, Clim: typing.Tuple[int, int] = None) -> np.ndarra
     return (img.astype(np.float32).clip(Vmin, Vmax) - Vmin) / (Vmax - Vmin)
 
 
-def translateTexture(bg: np.ndarray, U: typing.Dict[str, typing.Any]) -> np.ndarray:
+def translateTexture(bg: np.ndarray, U: dict[str, T.Any]) -> np.ndarray:
     """
      to make multiple simultaneous phantoms, call this function repeatedly and sum the result
     """
@@ -130,7 +132,7 @@ def translateTexture(bg: np.ndarray, U: typing.Dict[str, typing.Any]) -> np.ndar
     return data
 
 
-def doShearRight(bg: np.ndarray, i: int, U: typing.Dict[str, typing.Any]) -> np.ndarray:
+def doShearRight(bg: np.ndarray, i: int, U: dict[str, T.Any]) -> np.ndarray:
     """
     see also http://scikit-image.org/docs/dev/api/skimage.transform.html#affinetransform
     """

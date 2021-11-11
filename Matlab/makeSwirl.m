@@ -14,31 +14,21 @@ function [Iswirl,u,v] = makeSwirl(I,x0,y0,strength,radius,showPlot,fillValue,Bit
 %
 % tested with 16-bit images
 % compiled by Michael Hirsch 2012
-%
-% Note: Octave 3.8 does not yet have makeresampler or tformarray.  
-
-if isoctave
-    warning('Octave 4.0 still does not have makeresampler')
+arguments
+  I (:,:) {mustBeNumeric}
+  x0 (1,1) {mustBeInteger,mustBePositive} = size(I,2)/2
+  y0 (1,1) {mustBeInteger,mustBePositive} = size(I,1)/2
+  strength (1,1) {mustBeInteger,mustBePositive} = 10
+  radius (1,1) {mustBeInteger,mustBePositive} = 120
+  showPlot (1,1) logical = false
+  fillValue (1,1) {mustBeInteger,mustBePositive} = 0
+  BitDepth (1,1) {mustBeInteger,mustBePositive} = 8
+  Detachment (1,1) logical = false
 end
 
-if nargin<8 || isempty(BitDepth), BitDepth = 8; end
 myClass = ['uint',int2str(BitDepth)];
 whiteVal = 2^BitDepth-1;
-
-if nargin<1 || isempty(I), I = whiteVal*checkerboard(64); end
-[nRow, nCol] = size(I);
-if nargin<2 || isempty(x0),       x0 = round(nCol/2); end
-if nargin<3 || isempty(y0),       y0 = round(nRow/2); end
-if nargin<4 || isempty(strength), strength = 10; end
-if nargin<5 || isempty(radius),   radius = 120; end
-if nargin<6 || isempty(showPlot), showPlot=false; end
-if nargin<7 || isempty(fillValue),fillValue = 0; end
-%
-if nargin<9 || isempty(Detachment), Detachment = false; end
-
-
 Nswirl = length(x0);
-
 
 %all radii the same?
 if Nswirl>length(radius) %set all radii to first radius value
@@ -52,7 +42,6 @@ end
 
 %initialize mesh
 [xi,yi] = meshgrid(1:nCol,1:nRow);
-
 
 %% setup dilation
 if Detachment
@@ -93,7 +82,7 @@ theta = strength(ii).*...
             + atan2(yi-y0(ii),xi-x0(ii));
 
 % polar to cartesian conversion %pol2cart() would take two steps
-u = x0(ii) + rho.*cos(theta); 
+u = x0(ii) + rho.*cos(theta);
 v = y0(ii) + rho.*sin(theta);
 
 % implement the transform
@@ -103,13 +92,13 @@ Iswirl = tformarray(Iswirl,[],resamp,[2 1],[1 2],[],...
 
   if Detachment
         % morphological: increment phantom 'detachment'
-        %subI = imdilate(subI,se); 
+        %subI = imdilate(subI,se);
 
         subI2 = strength(ii).*(subI./25); % this "fades in" detachment (very crude)
 
         % 'snip' by subtracting from main image
         Iswirl = Iswirl - subI2;
-  end %if 
+  end %if
 end %for
 %% plotting
 %display(strength(ii)*65535/25)

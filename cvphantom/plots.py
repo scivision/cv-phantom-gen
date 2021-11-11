@@ -3,7 +3,7 @@ import typing
 import numpy as np
 
 
-def play(imgs: np.ndarray, U: typing.Dict[str, typing.Any]):
+def play(imgs: np.ndarray, U: dict[str, typing.Any]):
     if not imgs.ndim == 3:
         raise ValueError("Expected N x X x Y 3-D image stack.")
 

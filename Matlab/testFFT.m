@@ -10,7 +10,7 @@ s = s + 1; %keeps always positive -- probably not needed but...
 s = repmat(s,npix,nrep);
 
 Smagdb = doplot(s);
-display('zoom into figure 3 to see the peaks near the center "DC" value')
+disp('zoom into figure 3 to see the peaks near the center "DC" value')
 %% skelton like
 
 q = false(512);

@@ -1,4 +1,5 @@
-import typing
+from __future__ import annotations
+import typing as T
 import numpy as np
 import scipy.ndimage.filters as ndf
 import scipy.ndimage.interpolation as ndi
@@ -6,7 +7,7 @@ from skimage.data import checkerboard
 from numpy.random import rand
 
 
-def phantomTexture(U: typing.Dict[str, typing.Any]):
+def phantomTexture(U: dict[str, T.Any]):
     nrow, ncol = U["rowcol"]
     fwidth = U["fwidth"]
     if "dtype" in U and U["dtype"] is not None:
