@@ -25,10 +25,8 @@ Homepage = "https://github.com/scivision/cv-phantom-gen"
 
 [project.optional-dependencies]
 tests = ["pytest", "mypy"]
-io = ["imageio", "imageio-ffmpeg"]
+io = ["imageio"]
 
 [tool.mypy]
 files = ["."]
 ignore_missing_imports = true
-strict_optional = false
-allow_redefinition = true

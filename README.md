@@ -8,10 +8,8 @@ Computer Vision phantom generation, particularly useful for simulated images of 
 python -m pip install -e .[io]
 ```
 
-The [io] parameter installs
+The `[io]` parameter installs
 [imageio](http://imageio.github.io/)
-and
-[imageio-ffmpeg](https://pypi.org/project/imageio-ffmpeg/,
 necessary to write files to disk, which is what you normally want to do.
 
 ## Usage

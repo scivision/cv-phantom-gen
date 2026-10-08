@@ -58,29 +58,29 @@ if __name__ == "__main__":
         nargs=2,
         default=(1, 1),
     )
-    p = p.parse_args()
+    args = p.parse_args()
 
     # %% build user parameter dict
     U = {
-        "bitdepth": p.bits,
-        "rowcol": p.rc,
-        "dxy": p.dxy,
-        "nframe": p.nframe,
-        "fwidth": p.width,
-        "fstep": p.step,
-        "gaussiansigma": p.gausssigma,
-        "texture": p.texture,
-        "motion": p.motion,
+        "bitdepth": args.bits,
+        "rowcol": args.rc,
+        "dxy": args.dxy,
+        "nframe": args.nframe,
+        "fwidth": args.width,
+        "fstep": args.step,
+        "gaussiansigma": args.gausssigma,
+        "texture": args.texture,
+        "motion": args.motion,
     }
     # %% computing
     bg = cvphantom.phantomTexture(U)
-    if p.two:
+    if args.two:
         bg = bg + nd.shift(bg, [0, 15])  # this line can wrap values if you overlap
 
     imgs = cvphantom.translateTexture(bg, U)
 
-    if p.savefn:
-        savefn = Path(p.savefn).expanduser()
+    if args.savefn:
+        savefn = Path(args.savefn).expanduser()
         print("writing video to", savefn)
         imageio.mimwrite(savefn, cvphantom.sixteen2eight(imgs))
     else:
