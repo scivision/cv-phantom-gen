@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-import pytest
 from cvphantom import phantomTexture
 
 
@@ -18,7 +16,3 @@ def test_textures():
 
     assert imgs.dtype == U["dtype"]
     assert imgs[62, 62] == 53018
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])

@@ -1,5 +1,4 @@
 function testFFT()
-close('all')
 
 npix = 512;
 nrep = 3;
@@ -56,7 +55,7 @@ set(gca,'clim',[0,55])
 mid = size(d,1)/2+1;
 
 figure
-plot(abs(D(mid,:))) %1-D cut of center 
+plot(abs(D(mid,:))) %1-D cut of center
 title('1-D center cut of |D|')
 axis('tight')
 xlabel('frequency bin #')

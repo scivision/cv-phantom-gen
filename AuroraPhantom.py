@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Auroral Phantom Generator
 
 # stationary vertical bar
 ./AuroraPhantom.py -t vertbar -n 1
 """
+
 import argparse
 import scipy.ndimage as nd
 import imageio
